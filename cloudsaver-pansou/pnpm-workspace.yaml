@@ -1,3 +1,11 @@
 packages:
   - 'frontend'
   - 'backend'
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - bcrypt
+  - esbuild
+  - sqlite3
+  - typeit
+  - vue-demi
