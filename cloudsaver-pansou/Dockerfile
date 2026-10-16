@@ -1,5 +1,5 @@
 # 构建前端项目
-FROM node:18-alpine as frontend-build
+FROM node:22-alpine as frontend-build
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # 构建后端项目
-FROM node:18-alpine as backend-build
+FROM node:22-alpine as backend-build
 WORKDIR /app
 # bcrypt / sqlite3 需要执行原生构建脚本
 RUN apk add --no-cache python3 make g++
@@ -18,7 +18,7 @@ RUN rm -f database.sqlite
 RUN npm run build
 
 # 生产环境镜像
-FROM node:18-alpine
+FROM node:22-alpine
 
 # 安装 Nginx 及 bcrypt/sqlite3 运行时构建依赖
 RUN apk add --no-cache nginx python3 make g++
@@ -53,7 +53,3 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # 启动服务
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
-
-
-
