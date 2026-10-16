@@ -47,7 +47,9 @@
       "bcrypt",
       "esbuild",
       "sqlite3",
+      "typeit",
       "vue-demi"
     ]
   }
 }
+
