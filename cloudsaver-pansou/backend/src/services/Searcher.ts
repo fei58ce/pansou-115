@@ -218,5 +218,3 @@ export class Searcher {
     }
   }
 }
-
-export default new Searcher();

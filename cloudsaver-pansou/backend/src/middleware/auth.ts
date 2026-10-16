@@ -16,7 +16,7 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ): Promise<void | Response> => {
-  if (req.path === "/user/login" || req.path === "/user/register" || req.path === "/tele-images/") {
+  if (req.path === "/user/login" || req.path === "/user/register" || req.path === "/tele-images") {
     return next();
   }
 

@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 
-const excludePaths = ["/tele-images/"];
+const excludePaths = new Set(["/tele-images"]);
 
 export const requestLogger = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     const start = Date.now();
     res.on("finish", () => {
-      if (excludePaths.includes(req.path)) {
+      if (excludePaths.has(req.path)) {
         return;
       }
       const duration = Date.now() - start;
