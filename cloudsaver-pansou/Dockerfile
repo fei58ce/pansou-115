@@ -1,8 +1,8 @@
 # 构建前端项目
 FROM node:18-alpine as frontend-build
 WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm install
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
@@ -11,8 +11,8 @@ FROM node:18-alpine as backend-build
 WORKDIR /app
 # bcrypt / sqlite3 需要执行原生构建脚本
 RUN apk add --no-cache python3 make g++
-COPY backend/package*.json ./
-RUN npm install
+COPY backend/package.json backend/package-lock.json ./
+RUN npm ci
 COPY backend/ ./
 RUN rm -f database.sqlite
 RUN npm run build
@@ -39,7 +39,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=backend-build /app /app
 
 # 安装生产环境依赖
-RUN npm install --production
+RUN npm ci --omit=dev
 
 # 设置数据卷
 VOLUME ["/app/config", "/app/data"]
