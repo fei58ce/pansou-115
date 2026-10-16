@@ -8,4 +8,8 @@ export class Cloud115Controller extends BaseCloudController {
   constructor(@inject(TYPES.Cloud115Service) cloud115Service: Cloud115Service) {
     super(cloud115Service);
   }
+
+  protected getCookieType(): "cloud115" {
+    return "cloud115";
+  }
 }

@@ -9,4 +9,8 @@ export class QuarkController extends BaseCloudController {
   constructor(@inject(TYPES.QuarkService) quarkService: QuarkService) {
     super(quarkService);
   }
+
+  protected getCookieType(): "quark" {
+    return "quark";
+  }
 }

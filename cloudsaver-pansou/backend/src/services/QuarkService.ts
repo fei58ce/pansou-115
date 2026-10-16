@@ -2,8 +2,6 @@ import { AxiosInstance, AxiosHeaders } from "axios";
 import { logger } from "../utils/logger";
 import { createAxiosInstance } from "../utils/axiosInstance";
 import { injectable } from "inversify";
-import { Request } from "express";
-import UserSetting from "../models/UserSetting";
 import {
   ShareInfoResponse,
   FolderListResponse,
@@ -27,13 +25,11 @@ interface QuarkShareInfo {
 @injectable()
 export class QuarkService implements ICloudStorageService {
   private api: AxiosInstance;
-  private cookie: string = "";
 
   constructor() {
     this.api = createAxiosInstance(
       "https://drive-h.quark.cn",
       AxiosHeaders.from({
-        cookie: this.cookie,
         accept: "application/json, text/plain, */*",
         "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
         "content-type": "application/json",
@@ -46,37 +42,34 @@ export class QuarkService implements ICloudStorageService {
         "sec-fetch-site": "same-site",
       })
     );
-
-    this.api.interceptors.request.use((config) => {
-      config.headers.cookie = this.cookie;
-      return config;
-    });
   }
 
-  async setCookie(req: Request): Promise<void> {
-    const userId = req.user?.userId;
-    const userSetting = await UserSetting.findOne({
-      where: { userId },
-    });
-    if (userSetting && userSetting.dataValues.quarkCookie) {
-      this.cookie = userSetting.dataValues.quarkCookie;
-    } else {
-      throw new Error("请先设置夸克网盘cookie");
-    }
+  /**
+   * 在请求级别注入 cookie，避免单例服务在多用户环境下的状态污染
+   */
+  private withCookie(cookie: string) {
+    return {
+      headers: { cookie },
+    };
   }
 
-  async getShareInfo(pwdId: string, passcode = ""): Promise<ShareInfoResponse> {
+  async getShareInfo(
+    shareCode: string,
+    cookie: string,
+    receiveCode = ""
+  ): Promise<ShareInfoResponse> {
     const response = await this.api.post(
       `/1/clouddrive/share/sharepage/token?pr=ucpro&fr=pc&uc_param_str=&__dt=994&__t=${Date.now()}`,
       {
-        pwd_id: pwdId,
-        passcode,
-      }
+        pwd_id: shareCode,
+        passcode: receiveCode,
+      },
+      this.withCookie(cookie)
     );
     if (response.data?.status === 200 && response.data.data) {
       const fileInfo = response.data.data;
       if (fileInfo.stoken) {
-        const res = await this.getShareList(pwdId, fileInfo.stoken);
+        const res = await this.getShareList(shareCode, fileInfo.stoken, cookie);
         return {
           data: res,
         };
@@ -85,8 +78,13 @@ export class QuarkService implements ICloudStorageService {
     throw new Error("获取夸克分享信息失败");
   }
 
-  async getShareList(pwdId: string, stoken: string): Promise<ShareInfoResponse["data"]> {
+  async getShareList(
+    pwdId: string,
+    stoken: string,
+    cookie: string
+  ): Promise<ShareInfoResponse["data"]> {
     const response = await this.api.get("/1/clouddrive/share/sharepage/detail", {
+      ...this.withCookie(cookie),
       params: {
         pr: "ucpro",
         fr: "pc",
@@ -126,8 +124,9 @@ export class QuarkService implements ICloudStorageService {
     }
   }
 
-  async getFolderList(parentCid = "0"): Promise<FolderListResponse> {
+  async getFolderList(cookie: string, parentCid = "0"): Promise<FolderListResponse> {
     const response = await this.api.get("/1/clouddrive/file/sort", {
+      ...this.withCookie(cookie),
       params: {
         pr: "ucpro",
         fr: "pc",
@@ -160,7 +159,10 @@ export class QuarkService implements ICloudStorageService {
     }
   }
 
-  async saveSharedFile(params: SaveFileParams): Promise<{ message: string; data: unknown }> {
+  async saveSharedFile(
+    params: SaveFileParams,
+    cookie: string
+  ): Promise<{ message: string; data: unknown }> {
     const quarkParams = {
       fid_list: params.fids,
       fid_token_list: params.fidTokens,
@@ -173,7 +175,8 @@ export class QuarkService implements ICloudStorageService {
     try {
       const response = await this.api.post(
         `/1/clouddrive/share/sharepage/save?pr=ucpro&fr=pc&uc_param_str=&__dt=208097&__t=${Date.now()}`,
-        quarkParams
+        quarkParams,
+        this.withCookie(cookie)
       );
 
       return {

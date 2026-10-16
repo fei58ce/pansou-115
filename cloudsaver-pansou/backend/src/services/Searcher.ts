@@ -93,9 +93,9 @@ export class Searcher {
       try {
         const messageIdparams = messageId ? `before=${messageId}` : "";
         const url = `/${channel.id}${keyword ? `?q=${encodeURIComponent(keyword)}&${messageIdparams}` : `?${messageIdparams}`}`;
-        console.log(`Searching in channel ${channel.name} with URL: ${url}`);
+        logger.debug(`Searching in channel ${channel.name} with URL: ${url}`);
         return this.searchInWeb(url).then((results) => {
-          console.log(`Found ${results.items.length} items in channel ${channel.name}`);
+          logger.debug(`Found ${results.items.length} items in channel ${channel.name}`);
           if (results.items.length > 0) {
             const channelResults = results.items
               .filter((item: sourceItem) => item.cloudLinks && item.cloudLinks.length > 0)

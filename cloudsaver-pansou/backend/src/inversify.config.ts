@@ -45,4 +45,3 @@ container.bind<UserController>(TYPES.UserController).to(UserController);
 container.bind<SponsorsController>(TYPES.SponsorsController).to(SponsorsController);
 
 export { container };
-

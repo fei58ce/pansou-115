@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Request } from "express";
 import { config } from "../config";
+import { logger } from "./logger";
 
 interface JwtPayload {
   userId: string;
@@ -15,7 +16,7 @@ export function getUserIdFromToken(req: Request): string | null {
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
     return decoded.userId;
   } catch (error) {
-    console.error("Invalid token:", error);
+    logger.error("Invalid token:", error);
     return null;
   }
 }

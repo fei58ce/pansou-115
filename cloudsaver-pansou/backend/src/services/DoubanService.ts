@@ -1,5 +1,6 @@
 import { AxiosHeaders, AxiosInstance } from "axios";
 import { createAxiosInstance } from "../utils/axiosInstance";
+import { logger } from "../utils/logger";
 
 interface DoubanSubject {
   id: string;
@@ -57,7 +58,7 @@ export class DoubanService {
         };
       }
     } catch (error) {
-      console.error("Error fetching hot list:", error);
+      logger.error("Error fetching hot list:", error);
       throw error;
     }
   }

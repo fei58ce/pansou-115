@@ -1,9 +1,7 @@
-import { AxiosHeaders, AxiosInstance } from "axios"; // 导入 AxiosHeaders
+import { AxiosHeaders, AxiosInstance } from "axios";
 import { createAxiosInstance } from "../utils/axiosInstance";
 import { ShareInfoResponse, FolderListResponse, SaveFileParams } from "../types/cloud";
 import { injectable } from "inversify";
-import { Request } from "express";
-import UserSetting from "../models/UserSetting";
 import { ICloudStorageService } from "@/types/services";
 import { logger } from "../utils/logger";
 
@@ -22,7 +20,6 @@ interface Cloud115FolderItem {
 @injectable()
 export class Cloud115Service implements ICloudStorageService {
   private api: AxiosInstance;
-  private cookie: string = "";
 
   constructor() {
     this.api = createAxiosInstance(
@@ -44,27 +41,24 @@ export class Cloud115Service implements ICloudStorageService {
         "Accept-Language": "zh-CN,zh;q=0.9",
       })
     );
-
-    this.api.interceptors.request.use((config) => {
-      config.headers.cookie = this.cookie;
-      return config;
-    });
   }
 
-  async setCookie(req: Request): Promise<void> {
-    const userId = req.user?.userId;
-    const userSetting = await UserSetting.findOne({
-      where: { userId },
-    });
-    if (userSetting && userSetting.dataValues.cloud115Cookie) {
-      this.cookie = userSetting.dataValues.cloud115Cookie;
-    } else {
-      throw new Error("请先设置115网盘cookie");
-    }
+  /**
+   * 在请求级别注入 cookie，避免单例服务在多用户环境下的状态污染
+   */
+  private withCookie(cookie: string) {
+    return {
+      headers: { cookie },
+    };
   }
 
-  async getShareInfo(shareCode: string, receiveCode = ""): Promise<ShareInfoResponse> {
+  async getShareInfo(
+    shareCode: string,
+    cookie: string,
+    receiveCode = ""
+  ): Promise<ShareInfoResponse> {
     const response = await this.api.get("/share/snap", {
+      ...this.withCookie(cookie),
       params: {
         share_code: shareCode,
         receive_code: receiveCode,
@@ -89,8 +83,9 @@ export class Cloud115Service implements ICloudStorageService {
     }
   }
 
-  async getFolderList(parentCid = "0"): Promise<FolderListResponse> {
+  async getFolderList(cookie: string, parentCid = "0"): Promise<FolderListResponse> {
     const response = await this.api.get("/files", {
+      ...this.withCookie(cookie),
       params: {
         aid: 1,
         cid: parentCid,
@@ -125,14 +120,21 @@ export class Cloud115Service implements ICloudStorageService {
     }
   }
 
-  async saveSharedFile(params: SaveFileParams): Promise<{ message: string; data: unknown }> {
+  async saveSharedFile(
+    params: SaveFileParams,
+    cookie: string
+  ): Promise<{ message: string; data: unknown }> {
     const param = new URLSearchParams({
       cid: params.folderId || "",
       share_code: params.shareCode || "",
       receive_code: params.receiveCode || "",
       file_id: params.fids?.[0] || "",
     });
-    const response = await this.api.post("/share/receive", param.toString());
+    const response = await this.api.post(
+      "/share/receive",
+      param.toString(),
+      this.withCookie(cookie)
+    );
     logger.info("保存文件:", response.data);
     if (response.data.state) {
       return {

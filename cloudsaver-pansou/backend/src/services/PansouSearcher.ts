@@ -3,11 +3,6 @@ import axios from "axios";
 import { injectable } from "inversify";
 import { logger } from "../utils/logger";
 
-interface PansouLink {
-  url: string;
-  password?: string;
-}
-
 interface PansouMergedLink {
   url: string;
   password?: string;
@@ -86,6 +81,3 @@ export class PansouSearcher {
     return match ? `115分享 ${match[1]}` : "115分享";
   }
 }
-
-export default new PansouSearcher();
-

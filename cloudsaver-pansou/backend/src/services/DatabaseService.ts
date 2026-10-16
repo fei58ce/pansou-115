@@ -2,6 +2,7 @@ import { Sequelize, QueryTypes } from "sequelize";
 import GlobalSetting from "../models/GlobalSetting";
 import { Searcher } from "./Searcher";
 import sequelize from "../config/database";
+import { logger } from "../utils/logger";
 
 // 全局设置默认值
 const DEFAULT_GLOBAL_SETTINGS = {
@@ -36,11 +37,11 @@ export class DatabaseService {
       const settings = await GlobalSetting.findOne();
       if (!settings) {
         await GlobalSetting.create(DEFAULT_GLOBAL_SETTINGS);
-        console.log("✅ Global settings initialized with default values.");
+        logger.info("Global settings initialized with default values.");
       }
       await Searcher.updateAxiosInstance();
     } catch (error) {
-      console.error("❌ Failed to initialize global settings:", error);
+      logger.error("Failed to initialize global settings:", error);
       throw error;
     }
   }

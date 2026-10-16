@@ -19,4 +19,3 @@ export const TYPES = {
   UserController: Symbol.for("UserController"),
   SponsorsController: Symbol.for("SponsorsController"),
 };
-

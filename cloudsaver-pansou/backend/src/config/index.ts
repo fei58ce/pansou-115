@@ -47,11 +47,37 @@ const getTeleChannels = (): Channel[] => {
       return JSON.parse(channelsStr);
     }
   } catch (error) {
-    console.warn("无法解析 TELE_CHANNELS 环境变量，使用默认配置");
+    // 注意：此处不依赖 logger，避免与 logger.ts 形成循环引用
+    // eslint-disable-next-line no-console
+    console.warn("无法解析 TELE_CHANNELS 环境变量，使用默认配置:", error);
   }
 
   // 默认配置
   return [];
+};
+
+/**
+ * 解析 JWT 密钥
+ * 优先使用 JWT_SECRET 环境变量；
+ * 未设置时根据当前环境给出警告（开发环境使用临时占位密钥，生产环境抛出错误）。
+ */
+const resolveJwtSecret = (): string => {
+  const fromEnv = process.env.JWT_SECRET?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  const isProduction = process.env.NODE_ENV === "production";
+  if (isProduction) {
+    throw new Error("未设置 JWT_SECRET 环境变量。生产环境必须配置强随机密钥（建议 32 字节以上）。");
+  }
+
+  // 开发环境使用占位密钥并发出警告
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[警告] 未设置 JWT_SECRET 环境变量，当前使用开发环境占位密钥。生产部署前务必设置强随机密钥。"
+  );
+  return "dev-only-insecure-secret-change-me";
 };
 
 export const config: Config = {
@@ -64,10 +90,10 @@ export const config: Config = {
     path: "./data/database.sqlite",
   },
   jwt: {
-    secret: process.env.JWT_SECRET || "your-secret-key",
+    secret: resolveJwtSecret(),
     expiresIn: "6h",
   },
-  jwtSecret: process.env.JWT_SECRET || "uV7Y$k92#LkF^q1b!",
+  jwtSecret: resolveJwtSecret(),
 
   telegram: {
     baseUrl: process.env.TELEGRAM_BASE_URL || "https://t.me/s",
