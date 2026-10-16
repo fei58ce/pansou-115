@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="settings-page">
     <!-- 项目配置卡片 -->
     <el-card v-if="settingStore.globalSetting" class="settings-card network-card">
@@ -138,44 +138,6 @@
           </div>
         </div>
 
-        <!-- 帮助链接 -->
-        <div class="settings-help">
-          <h3>帮助文档</h3>
-          <div class="help-links">
-            <el-link
-              href="https://www.yuque.com/xiaoruihenbangde/ggogn3/ga6gaaiy5fsyw62l?singleDoc=true"
-              target="_blank"
-              type="primary"
-            >
-              <el-icon><QuestionFilled /></el-icon>
-              CloudSaver部署与使用常见问题
-            </el-link>
-            <el-link
-              href="https://www.yuque.com/xiaoruihenbangde/ggogn3/cl2g0p9h3xrgfa5i"
-              target="_blank"
-              type="primary"
-            >
-              <el-icon><QuestionFilled /></el-icon>
-              CloudSaver功能介绍
-            </el-link>
-            <el-link
-              href="https://alist.nn.ci/zh/guide/drivers/115.html#cookie获取方式"
-              target="_blank"
-              type="primary"
-            >
-              <el-icon><QuestionFilled /></el-icon>
-              如何获取115网盘Cookie？
-            </el-link>
-            <el-link
-              href="https://alist.nn.ci/zh/guide/drivers/quark.html#cookie"
-              target="_blank"
-              type="primary"
-            >
-              <el-icon><QuestionFilled /></el-icon>
-              如何获取夸克网盘Cookie？
-            </el-link>
-          </div>
-        </div>
       </div>
     </el-card>
 
@@ -198,7 +160,6 @@ import {
   Key,
   User,
   Lock,
-  QuestionFilled,
 } from "@element-plus/icons-vue";
 
 const settingStore = useUserSettingStore();

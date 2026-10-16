@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login">
     <!-- 背景区域 -->
     <div class="login__background" aria-hidden="true" />
@@ -7,8 +7,8 @@
     <main class="login__content">
       <!-- 头部 Logo -->
       <header class="login__header">
-        <img :src="logo" alt="Cloud Saver Logo" class="login__logo" width="60" height="60" />
-        <h1 class="login__title">Cloud Saver</h1>
+        <img :src="logo" alt="自用影视搜索库 Logo" class="login__logo" width="60" height="60" />
+        <h1 class="login__title">自用影视搜索库</h1>
       </header>
 
       <!-- 添加 Tab 切换 -->

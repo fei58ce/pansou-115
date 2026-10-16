@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <div class="pc-aside">
     <!-- Logo 区域 -->
     <div class="pc-aside__logo">
-      <img :src="logo" alt="Cloud Saver Logo" class="logo__image" />
-      <h1 class="logo__title">Cloud Saver</h1>
+      <img :src="logo" alt="自用影视搜索库 Logo" class="logo__image" />
+      <h1 class="logo__title">自用影视搜索库</h1>
     </div>
 
     <!-- 菜单区域 -->
@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Search, Film, Setting, Link } from "@element-plus/icons-vue";
+import { Search, Film, Setting } from "@element-plus/icons-vue";
 import logo from "@/assets/images/logo.png";
 import { PROJECT_GITHUB } from "@/constants/project";
 import pkg from "../../package.json";
@@ -78,7 +78,7 @@ import pkg from "../../package.json";
 interface MenuItem {
   index: string;
   title: string;
-  icon?: typeof Search | typeof Film | typeof Setting | typeof Link;
+  icon?: typeof Search | typeof Film | typeof Setting;
   router?: string;
   children?: MenuItem[];
   disabled?: boolean;
@@ -129,12 +129,6 @@ const menuList: MenuItem[] = [
     icon: Setting,
     router: "/setting",
     disabled: false,
-  },
-  {
-    index: "4",
-    title: "鸣谢",
-    icon: Link,
-    router: "/thanks",
   },
 ];
 

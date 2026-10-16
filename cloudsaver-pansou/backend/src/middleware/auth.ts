@@ -1,4 +1,4 @@
-// filepath: /D:/code/CloudDiskDown/backend/src/middleware/auth.ts
+﻿// filepath: /D:/code/CloudDiskDown/backend/src/middleware/auth.ts
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import User from "../models/User";
@@ -16,7 +16,11 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ): Promise<void | Response> => {
-  if (req.path === "/user/login" || req.path === "/user/register" || req.path === "/tele-images") {
+  if (
+    req.path === "/user/login" ||
+    req.path === "/user/register" ||
+    req.path.replace(/\/+$/, "") === "/tele-images"
+  ) {
     return next();
   }
 

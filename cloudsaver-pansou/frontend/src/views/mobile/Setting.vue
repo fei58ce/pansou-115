@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="setting">
     <!-- 全局设置 -->
     <div v-if="settingStore.globalSetting" class="setting__section">
@@ -80,32 +80,6 @@
         </van-cell-group>
       </div>
 
-      <!-- 帮助说明 -->
-      <div class="setting__help">
-        <div class="help__title">帮助说明</div>
-        <div class="help__links">
-          <van-cell
-            title="CloudSaver部署与使用常见问题"
-            is-link
-            url="https://www.yuque.com/xiaoruihenbangde/ggogn3/ga6gaaiy5fsyw62l?singleDoc=true"
-          />
-          <van-cell
-            title="CloudSaver功能介绍"
-            is-link
-            url="https://www.yuque.com/xiaoruihenbangde/ggogn3/cl2g0p9h3xrgfa5i"
-          />
-          <van-cell
-            title="如何获取115网盘cookie？"
-            is-link
-            url="https://alist.nn.ci/zh/guide/drivers/115.html"
-          />
-          <van-cell
-            title="如何获取夸克网盘cookie？"
-            is-link
-            url="https://alist.nn.ci/zh/guide/drivers/quark.html"
-          />
-        </div>
-      </div>
     </div>
 
     <!-- 保存按钮 -->
