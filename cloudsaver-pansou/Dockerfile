@@ -2,7 +2,7 @@
 FROM node:18-alpine as frontend-build
 WORKDIR /app
 COPY frontend/package*.json ./
-RUN npm install -g pnpm && pnpm config set confirmModulesPurge false
+RUN npm install -g pnpm
 RUN pnpm install
 COPY frontend/ ./
 RUN npm run build
@@ -56,3 +56,4 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # 启动服务
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
