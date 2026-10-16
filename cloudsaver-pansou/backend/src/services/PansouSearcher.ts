@@ -19,6 +19,32 @@ interface PansouSearchResponse {
   };
 }
 
+interface PansouCheckResult {
+  disk_type: string;
+  url: string;
+  normalized_url?: string;
+  state: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+  summary?: string;
+}
+
+interface PansouCheckResponse {
+  results?: PansouCheckResult[];
+}
+
+interface SearchItem {
+  id: string;
+  title: string;
+  cloudLinks: string[];
+  cloudType: string;
+  channel: string;
+  channelId: string;
+  pubDate: string;
+  content: string;
+  messageId: string;
+  tags: string[];
+  image: string;
+}
+
 @injectable()
 export class PansouSearcher {
   private api: AxiosInstance;
@@ -31,7 +57,7 @@ export class PansouSearcher {
     });
   }
 
-  async search(keyword: string, cloudType?: string) {
+  async search(keyword: string, cloudType?: string): Promise<SearchItem[]> {
     if (!keyword?.trim()) {
       return [];
     }
@@ -49,7 +75,7 @@ export class PansouSearcher {
       const targetType = cloudType || "115";
       const links = merged[targetType] || [];
 
-      return links.map((link, index) => ({
+      const items: SearchItem[] = links.map((link, index) => ({
         id: `pansou-${targetType}-${index}`,
         title: this.extractTitle(link),
         cloudLinks: [link.url],
@@ -62,10 +88,56 @@ export class PansouSearcher {
         tags: [],
         image: "",
       }));
+
+      return this.filterDeadLinks(items, targetType);
     } catch (error) {
       logger.error("PanSou 搜索失败:", error);
       return [];
     }
+  }
+
+  /**
+   * 过滤确认已失效的分享链接。
+   *
+   * 策略（保守）：
+   * - bad（已取消/失效/违规）→ 过滤
+   * - locked（需要提取码，无法确认）→ 保留
+   * - uncertain（探测失败）→ 保留
+   * - ok → 保留
+   *
+   * 探活失败（网络问题等）整体跳过过滤，避免误杀。
+   */
+  private async filterDeadLinks(items: SearchItem[], cloudType: string): Promise<SearchItem[]> {
+    if (items.length === 0) return items;
+
+    try {
+      const response = await this.api.post<PansouCheckResponse>("/api/check/links", {
+        items: items.map((item) => ({
+          disk_type: cloudType,
+          url: item.cloudLinks[0],
+          password: this.extractPasswordFromUrl(item.cloudLinks[0]),
+        })),
+      });
+
+      const results = response.data?.results || [];
+      const deadUrls = new Set(
+        results.filter((r) => r.state === "bad").map((r) => r.normalized_url || r.url)
+      );
+
+      if (deadUrls.size === 0) return items;
+
+      const filtered = items.filter((item) => !deadUrls.has(item.cloudLinks[0]));
+      logger.info(`[PanSou] 过滤失效链接: ${items.length} -> ${filtered.length}`);
+      return filtered;
+    } catch (error) {
+      logger.error("PanSou 链接探活失败，跳过过滤:", error);
+      return items;
+    }
+  }
+
+  private extractPasswordFromUrl(url: string): string {
+    const match = url.match(/[?&]password=([^&#]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
   }
 
   private extractTitle(link: PansouMergedLink): string {
