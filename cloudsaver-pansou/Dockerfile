@@ -2,18 +2,16 @@
 FROM node:18-alpine as frontend-build
 WORKDIR /app
 COPY frontend/package*.json ./
-RUN npm install -g pnpm
-RUN pnpm install
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
 # 构建后端项目
 FROM node:18-alpine as backend-build
 WORKDIR /app
-# bcrypt / sqlite3 需要执行原生构建脚本，pnpm 10 起默认拦截，需显式允许
+# bcrypt / sqlite3 需要执行原生构建脚本
 RUN apk add --no-cache python3 make g++
 COPY backend/package*.json ./
-RUN npm install -g pnpm
 RUN npm install
 COPY backend/ ./
 RUN rm -f database.sqlite
@@ -41,7 +39,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=backend-build /app /app
 
 # 安装生产环境依赖
-RUN npm install --production --ignore-scripts=false
+RUN npm install --production
 
 # 设置数据卷
 VOLUME ["/app/config", "/app/data"]
@@ -55,4 +53,3 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # 启动服务
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
