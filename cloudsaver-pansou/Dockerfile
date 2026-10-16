@@ -2,7 +2,7 @@
 FROM node:18-alpine as frontend-build
 WORKDIR /app
 COPY frontend/package*.json ./
-RUN npm install -g pnpm
+RUN npm install -g pnpm && pnpm config set confirmModulesPurge false
 RUN pnpm install
 COPY frontend/ ./
 RUN npm run build
@@ -10,9 +10,12 @@ RUN npm run build
 # 构建后端项目
 FROM node:18-alpine as backend-build
 WORKDIR /app
+# bcrypt / sqlite3 需要执行原生构建脚本，pnpm 10 起默认拦截，需显式允许
+RUN apk add --no-cache python3 make g++
 COPY backend/package*.json ./
 RUN npm install -g pnpm
-RUN pnpm install
+RUN pnpm config set enablePrePostScripts true && \
+    pnpm install --ignore-scripts=false
 COPY backend/ ./
 RUN rm -f database.sqlite
 RUN npm run build
@@ -20,8 +23,8 @@ RUN npm run build
 # 生产环境镜像
 FROM node:18-alpine
 
-# 安装 Nginx
-RUN apk add --no-cache nginx
+# 安装 Nginx 及 bcrypt/sqlite3 运行时构建依赖
+RUN apk add --no-cache nginx python3 make g++
 
 # 设置工作目录
 WORKDIR /app
@@ -39,7 +42,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=backend-build /app /app
 
 # 安装生产环境依赖
-RUN npm install --production
+RUN npm install --production --ignore-scripts=false
 
 # 设置数据卷
 VOLUME ["/app/config", "/app/data"]
