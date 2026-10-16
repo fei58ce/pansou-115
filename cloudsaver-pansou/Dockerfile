@@ -12,7 +12,7 @@ WORKDIR /app
 # bcrypt / sqlite3 需要执行原生构建脚本
 RUN apk add --no-cache python3 make g++
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY backend/ ./
 RUN rm -f database.sqlite
 RUN npm run build
@@ -39,7 +39,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=backend-build /app /app
 
 # 安装生产环境依赖
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # 设置数据卷
 VOLUME ["/app/config", "/app/data"]
@@ -53,3 +53,5 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # 启动服务
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+
