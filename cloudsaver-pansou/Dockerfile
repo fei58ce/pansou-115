@@ -14,7 +14,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 COPY backend/package*.json ./
 RUN npm install -g pnpm
-RUN pnpm install --ignore-scripts=false
+RUN npm install
 COPY backend/ ./
 RUN rm -f database.sqlite
 RUN npm run build
@@ -55,3 +55,4 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # 启动服务
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
