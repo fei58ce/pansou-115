@@ -1,4 +1,4 @@
-import { AxiosHeaders, AxiosInstance } from "axios";
+﻿import { AxiosHeaders, AxiosInstance } from "axios";
 import { createAxiosInstance } from "../utils/axiosInstance";
 import { logger } from "../utils/logger";
 
@@ -38,6 +38,26 @@ export class DoubanService {
     );
   }
 
+  /**
+   * 按标题搜索一张豆瓣海报，用于资源搜索结果补图。
+   */
+  async searchPoster(query: string): Promise<string> {
+    const keyword = query.trim();
+    if (!keyword) return "";
+
+    try {
+      const response = await this.api.get<Array<{ pic?: string; title?: string }>>(
+        "/subject_suggest",
+        {
+          params: { q: keyword },
+        }
+      );
+      return response.data?.find((item) => item.pic)?.pic || "";
+    } catch (error) {
+      logger.warn(`豆瓣海报搜索失败（${keyword}）:`, error);
+      return "";
+    }
+  }
   async getHotList(params: {
     type: string;
     tag: string;

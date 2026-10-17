@@ -151,6 +151,31 @@ export class TmdbService {
   }
 
   /**
+   * 按标题搜索一张海报，用于资源搜索结果补图。
+   */
+  async searchPoster(query: string, language?: string): Promise<string> {
+    const keyword = query.trim();
+    if (!keyword) return "";
+
+    const apiKey = await this.getApiKey();
+    try {
+      const { data } = await this.api.get<TmdbTrendingResponse>("/search/multi", {
+        params: {
+          api_key: apiKey,
+          query: keyword,
+          language: language || config.tmdb.language,
+          include_adult: false,
+          page: 1,
+        },
+      });
+      const first = (data.results || []).find((item) => item.poster_path);
+      return first ? this.buildImageUrl(first.poster_path, "w500") : "";
+    } catch (error) {
+      logger.warn(`TMDB 海报搜索失败（${keyword}）:`, error);
+      return "";
+    }
+  }
+  /**
    * 获取 trending 内容（每日/每周流行榜）
    */
   async getTrending(
