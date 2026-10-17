@@ -81,4 +81,9 @@ export const cloud115QrcodeApi = {
     const res = await request.post("/api/cloud115/lixian/retry", { recordId });
     return assertOk(res, "重试离线任务失败");
   },
+
+  async checkAuth() {
+    const res = await request.get<{ valid: boolean; message: string }>("/api/cloud115/auth/status");
+    return assertOk(res, "检测 115 授权失败");
+  },
 };

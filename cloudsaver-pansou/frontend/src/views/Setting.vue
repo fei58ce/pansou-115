@@ -143,6 +143,7 @@
                     <el-icon><FullScreen /></el-icon>
                     <span>扫码登录</span>
                   </el-button>
+                  <el-button @click="check115Auth">检测授权</el-button>
                 </template>
               </el-input>
             </div>
@@ -198,6 +199,7 @@ import {
   FullScreen,
 } from "@element-plus/icons-vue";
 import Cloud115QrcodeLogin from "@/components/Cloud115QrcodeLogin.vue";
+import { cloud115QrcodeApi } from "@/api/cloud115Qrcode";
 
 const settingStore = useUserSettingStore();
 const qrcodeDialog = ref(false);
@@ -279,6 +281,15 @@ const handleSave = async () => {
 };
 
 // 扫码登录成功后，重新拉取设置（cookie 已在服务端自动写入）
+const check115Auth = async () => {
+  try {
+    const result = await cloud115QrcodeApi.checkAuth();
+    if (result.valid) ElMessage.success(result.message || "115 授权有效");
+    else ElMessage.warning(result.message || "115 授权已失效，请重新扫码");
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "检测 115 授权失败");
+  }
+};
 const onQrcodeSuccess = async () => {
   await settingStore.getSettings();
   ElMessage.success("115 扫码登录成功，cookie 已自动保存");

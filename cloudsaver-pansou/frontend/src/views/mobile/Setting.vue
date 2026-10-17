@@ -67,6 +67,7 @@
             placeholder="TMDB API 密钥，保存后生效"
           />
           <van-cell title="115扫码登录" is-link @click="qrcodeDialog = true">
+          <van-cell title="检测115授权" is-link @click="check115Auth" />
             <template #icon>
               <van-icon name="qr" style="margin-right: 8px" />
             </template>
@@ -107,6 +108,7 @@ import { ref, watch } from "vue";
 import { showNotify } from "vant";
 import type { GlobalSettingAttributes, UserSettingAttributes } from "@/types/user";
 import Cloud115QrcodeLogin from "@/components/Cloud115QrcodeLogin.vue";
+import { cloud115QrcodeApi } from "@/api/cloud115Qrcode";
 
 const settingStore = useUserSettingStore();
 const qrcodeDialog = ref(false);
@@ -185,6 +187,15 @@ const handleSave = async () => {
 const handleProxyHostChange = (val: string) => {
   const cleanHost = val.replace(/^(https?:\/\/)/i, "");
   localGlobalSetting.value.httpProxyHost = cleanHost;
+};
+
+const check115Auth = async () => {
+  try {
+    const result = await cloud115QrcodeApi.checkAuth();
+    showNotify({ type: result.valid ? "success" : "warning", message: result.message });
+  } catch (error) {
+    showNotify({ type: "danger", message: error instanceof Error ? error.message : "检测 115 授权失败" });
+  }
 };
 
 const onQrcodeSuccess = async () => {

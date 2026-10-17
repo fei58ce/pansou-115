@@ -49,6 +49,7 @@ router.get("/sponsors", (req, res) => sponsorsController.get(req, res));
 router.get("/cloud115/share-info", (req, res) => cloud115Controller.getShareInfo(req, res));
 router.get("/cloud115/folders", (req, res) => cloud115Controller.getFolderList(req, res));
 router.post("/cloud115/save", (req, res) => cloud115Controller.saveFile(req, res));
+router.get("/cloud115/auth/status", (req, res) => cloud115Controller.checkAuth(req, res));
 // 115 二维码扫码登录
 router.post("/cloud115/qrcode/init", (req, res) => cloud115QrcodeController.init(req, res));
 router.get("/cloud115/qrcode/check", (req, res) => cloud115QrcodeController.check(req, res));
