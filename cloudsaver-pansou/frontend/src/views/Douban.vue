@@ -5,12 +5,12 @@
         <div class="movie-poster">
           <el-image
             class="movie-poster-img"
-            :src="movie.cover"
+            :src="getProxyImageUrl(movie.cover)"
             fit="cover"
             lazy
             :alt="movie.title"
             hide-on-click-modal
-            :preview-src-list="[movie.cover]"
+            :preview-src-list="[getProxyImageUrl(movie.cover)]"
           />
           <div class="movie-rate">
             {{ movie.rate }}
@@ -35,6 +35,7 @@
 import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDoubanStore } from "@/stores/douban";
+import { getProxyImageUrl } from "@/utils/image";
 interface CurrentParams {
   type: string;
   tag?: string;

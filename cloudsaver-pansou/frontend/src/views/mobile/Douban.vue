@@ -12,7 +12,7 @@
         <div class="douban__poster">
           <van-image
             class="poster__img"
-            :src="movie.cover"
+            :src="getProxyImageUrl(movie.cover)"
             fit="cover"
             lazy
             loading="skeleton"
@@ -51,6 +51,7 @@ import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDoubanStore } from "@/stores/douban";
 import { showImagePreview } from "vant";
+import { getProxyImageUrl } from "@/utils/image";
 
 interface CurrentParams {
   type: string;
@@ -86,7 +87,7 @@ const searchMovie = (title: string) => {
 
 const previewImage = (url: string) => {
   showImagePreview({
-    images: [url],
+    images: [getProxyImageUrl(url)],
     closeable: true,
   });
 };
