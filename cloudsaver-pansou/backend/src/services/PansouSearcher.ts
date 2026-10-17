@@ -113,10 +113,11 @@ export class PansouSearcher {
       if (targetType !== "magnet" && targetType !== "ed2k") {
         await this.fillMissingPosters(items);
       }
+      const uniqueItems = this.dedupeItems(items);
       if (targetType === "115") {
-        await this.checkLinkStatus(items, targetType);
+        await this.checkLinkStatus(uniqueItems, targetType);
       }
-      return this.rankItems(items, keyword);
+      return this.rankItems(uniqueItems, keyword);
     } catch (error) {
       logger.error("PanSou 搜索失败:", error);
       return [];
@@ -173,6 +174,37 @@ export class PansouSearcher {
       .sort((a, b) => b.score - a.score || a.index - b.index)
       .map(({ item }) => item);
   }
+  /** 去除完全重复链接和完全相同的资源标题，不合并不同季/不同集。 */
+  private dedupeItems(items: SearchItem[]): SearchItem[] {
+    const seenUrls = new Set<string>();
+    const seenTitles = new Set<string>();
+    const result: SearchItem[] = [];
+    for (const item of items) {
+      const urlKey = (item.cloudLinks[0] || "").toLowerCase().split("#")[0];
+      const titleKey = this.dedupeTitle(item.title);
+      if ((urlKey && seenUrls.has(urlKey)) || (titleKey && seenTitles.has(titleKey))) {
+        continue;
+      }
+      if (urlKey) seenUrls.add(urlKey);
+      if (titleKey) seenTitles.add(titleKey);
+      result.push(item);
+    }
+    return result;
+  }
+
+  private dedupeTitle(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/名称[:：]/g, "")
+      .replace(/[(（【][^)）】]*[)）】]/gu, " ")
+      .replace(
+        /(4k|8k|2160p|1080p|720p|hdr|dv|dolby|vision|nf|web-?dl|blu-?ray|remux|内封|外挂|简中|繁中|中英|双语|杜比|全景声|atmos)/gi,
+        " "
+      )
+      .replace(/[^\p{L}\p{N}]+/gu, "")
+      .trim();
+  }
+
   /** 批量探活 115 链接；只过滤明确 bad，网络不确定时保留结果。 */
   private async checkLinkStatus(items: SearchItem[], cloudType: string): Promise<void> {
     if (!items.length) return;
