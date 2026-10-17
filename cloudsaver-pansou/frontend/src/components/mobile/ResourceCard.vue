@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="resource-card">
     <div v-for="item in dataList" :key="item.id" class="resource-card__item">
       <!-- 内容区域 -->
@@ -13,6 +13,14 @@
           <!-- 来源标签移到图片左上角 -->
           <van-tag class="image__tag" :color="getTagColor(item.cloudType)" round>
             {{ item.cloudType }}
+          </van-tag>
+          <van-tag
+            v-if="item.linkStatus"
+            class="image__status"
+            :type="linkStatusType(item.linkStatus)"
+            round
+          >
+            {{ linkStatusText(item.linkStatus) }}
           </van-tag>
         </div>
 
@@ -105,6 +113,23 @@ const emit = defineEmits<{
 }>();
 
 const store = useResourceStore();
+const linkStatusText = (status: ResourceItem["linkStatus"]): string => {
+  const labels: Record<string, string> = {
+    ok: "有效",
+    locked: "需码",
+    uncertain: "待确认",
+    unsupported: "未检测",
+    bad: "失效",
+  };
+  return labels[status || ""] || "";
+};
+
+const linkStatusType = (status: ResourceItem["linkStatus"]): "primary" | "success" | "warning" | "danger" | "default" => {
+  if (status === "ok") return "success";
+  if (status === "locked") return "warning";
+  if (status === "bad") return "danger";
+  return "primary";
+};
 
 const dataList = computed(() => {
   const channel = store.resources.find((item) => item.id === props.currentChannelId);

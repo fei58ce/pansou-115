@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="resource-card">
     <!-- 详情弹窗 -->
     <el-dialog
@@ -132,6 +132,16 @@
                 >
                   {{ resource.cloudType }}
                 </el-tag>
+                <el-tag
+                  v-if="resource.linkStatus"
+                  class="link-status"
+                  :type="linkStatusType(resource.linkStatus)"
+                  effect="dark"
+                  round
+                  size="small"
+                >
+                  {{ linkStatusText(resource.linkStatus) }}
+                </el-tag>
               </div>
 
               <div class="card-body">
@@ -210,6 +220,23 @@ import { getProxyImageUrl } from "@/utils/image";
 import { copyMagnet } from "@/utils/magnet";
 
 const store = useResourceStore();
+const linkStatusText = (status: ResourceItem["linkStatus"]): string => {
+  const labels: Record<string, string> = {
+    ok: "有效",
+    locked: "需提取码",
+    uncertain: "待确认",
+    unsupported: "未检测",
+    bad: "已失效",
+  };
+  return labels[status || ""] || "";
+};
+
+const linkStatusType = (status: ResourceItem["linkStatus"]): string => {
+  if (status === "ok") return "success";
+  if (status === "locked") return "warning";
+  if (status === "bad") return "danger";
+  return "info";
+};
 
 const showDetail = ref(false);
 const currentResource = ref<ResourceItem | null>(null);
@@ -408,6 +435,13 @@ const handleLoadMore = (channelId: string) => {
         position: absolute;
         top: 8px;
         left: 8px;
+        z-index: 1;
+      }
+
+      .link-status {
+        position: absolute;
+        top: 8px;
+        right: 8px;
         z-index: 1;
       }
     }

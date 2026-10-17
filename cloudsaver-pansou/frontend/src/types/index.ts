@@ -18,6 +18,9 @@
   isSupportSave?: boolean;
   /** 是否支持复制磁力 / 115 离线下载 */
   isSupportMagnet?: boolean;
+  /** 链接探活状态 */
+  linkStatus?: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+  linkStatusMessage?: string;
 }
 
 export interface Resource {

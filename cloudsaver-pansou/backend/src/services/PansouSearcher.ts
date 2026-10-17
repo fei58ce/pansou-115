@@ -43,6 +43,20 @@ interface SearchItem {
   image: string;
   magnet?: string[];
   ed2k?: string[];
+  linkStatus?: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+  linkStatusMessage?: string;
+}
+
+interface PansouCheckResult {
+  disk_type: string;
+  url: string;
+  normalized_url?: string;
+  state: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+  summary?: string;
+}
+
+interface PansouCheckResponse {
+  results?: PansouCheckResult[];
 }
 
 @injectable()
@@ -98,6 +112,9 @@ export class PansouSearcher {
       }));
       if (targetType !== "magnet" && targetType !== "ed2k") {
         await this.fillMissingPosters(items);
+      }
+      if (targetType === "115") {
+        await this.checkLinkStatus(items, targetType);
       }
       return this.rankItems(items, keyword);
     } catch (error) {
@@ -156,6 +173,38 @@ export class PansouSearcher {
       .sort((a, b) => b.score - a.score || a.index - b.index)
       .map(({ item }) => item);
   }
+  /** 批量探活 115 链接；只过滤明确 bad，网络不确定时保留结果。 */
+  private async checkLinkStatus(items: SearchItem[], cloudType: string): Promise<void> {
+    if (!items.length) return;
+    try {
+      const response = await this.api.post<PansouCheckResponse>("/api/check/links", {
+        items: items.map((item) => ({
+          disk_type: cloudType,
+          url: item.cloudLinks[0],
+          password: this.extractPassword(item.cloudLinks[0]),
+        })),
+      });
+      const resultMap = new Map((response.data?.results || []).map((item) => [item.url, item]));
+      for (const item of items) {
+        const result = resultMap.get(item.cloudLinks[0]);
+        if (result) {
+          item.linkStatus = result.state;
+          item.linkStatusMessage = result.summary || "";
+        }
+      }
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i].linkStatus === "bad") items.splice(i, 1);
+      }
+    } catch (error) {
+      logger.warn("115 链接探活失败，保留原始搜索结果:", error);
+    }
+  }
+
+  private extractPassword(url: string): string {
+    const match = url.match(/[?&](?:password|pwd)=([^&#]+)/i);
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
   /** 给仍然没有图片的结果按标题补 TMDB/豆瓣海报。 */
   private async fillMissingPosters(items: SearchItem[]): Promise<void> {
     const titles = [
