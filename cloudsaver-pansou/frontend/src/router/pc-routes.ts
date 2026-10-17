@@ -22,6 +22,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/views/Tmdb.vue"),
       },
       {
+        path: "/lixian",
+        name: "lixian",
+        component: () => import("@/views/LixianTasks.vue"),
+      },
+      {
         path: "/setting",
         name: "setting",
         component: () => import("@/views/Setting.vue"),

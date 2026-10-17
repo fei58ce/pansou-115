@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Search, Film, Star, Setting } from "@element-plus/icons-vue";
+import { Search, Film, Star, List, Setting } from "@element-plus/icons-vue";
 import logo from "@/assets/images/logo.png";
 import { PROJECT_GITHUB } from "@/constants/project";
 import pkg from "../../package.json";
@@ -78,7 +78,7 @@ import pkg from "../../package.json";
 interface MenuItem {
   index: string;
   title: string;
-  icon?: typeof Search | typeof Film | typeof Setting;
+  icon?: typeof Search | typeof Film | typeof Star | typeof List | typeof Setting;
   router?: string;
   children?: MenuItem[];
   disabled?: boolean;
@@ -131,6 +131,12 @@ const menuList: MenuItem[] = [
   },
   {
     index: "4",
+    title: "115离线任务",
+    icon: List,
+    router: "/lixian",
+  },
+  {
+    index: "5",
     title: "设置",
     icon: Setting,
     router: "/setting",

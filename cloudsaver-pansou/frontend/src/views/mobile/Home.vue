@@ -33,6 +33,7 @@
       <van-tabbar-item to="/resource" icon="search">搜索</van-tabbar-item>
       <van-tabbar-item to="/douban" icon="video">豆瓣</van-tabbar-item>
       <van-tabbar-item to="/tmdb" icon="star-o">TMDB</van-tabbar-item>
+      <van-tabbar-item to="/lixian" icon="todo-list-o">离线</van-tabbar-item>
       <van-tabbar-item to="/setting" icon="setting-o">设置</van-tabbar-item>
     </van-tabbar>
 
