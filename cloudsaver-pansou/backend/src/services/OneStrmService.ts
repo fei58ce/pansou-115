@@ -31,7 +31,11 @@ export class OneStrmService {
     }
 
     try {
-      await this.api.post(`${baseUrl}/webhook/quick_scan`, { path }, { params: { token } });
+      await this.api.post(
+        `${baseUrl}/webhook/quick_scan`,
+        { paths: [path] },
+        { params: { token } }
+      );
       return { triggered: true, message: `已通知 OneStrm 扫描 ${path}` };
     } catch (error) {
       logger.warn("通知 OneStrm 扫描失败:", error);
