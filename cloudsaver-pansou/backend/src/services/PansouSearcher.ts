@@ -1,4 +1,4 @@
-import { AxiosInstance } from "axios";
+﻿import { AxiosInstance } from "axios";
 import axios from "axios";
 import { inject, injectable } from "inversify";
 import { logger } from "../utils/logger";
@@ -99,13 +99,63 @@ export class PansouSearcher {
       if (targetType !== "magnet" && targetType !== "ed2k") {
         await this.fillMissingPosters(items);
       }
-      return items;
+      return this.rankItems(items, keyword);
     } catch (error) {
       logger.error("PanSou 搜索失败:", error);
       return [];
     }
   }
 
+  /**
+   * 搜索结果质量排序。
+   * 分数越高越靠前：标题匹配 > 完整/合集 > 清晰度 > 来源信息 > 图片 > 新鲜度。
+   */
+  private rankItems(items: SearchItem[], keyword: string): SearchItem[] {
+    const query = this.normalizeTitle(keyword);
+    const now = Date.now();
+
+    const score = (item: SearchItem): number => {
+      const title = item.title || "";
+      const normalized = this.normalizeTitle(title);
+      let value = 0;
+
+      if (query && normalized === query) value += 100;
+      else if (query && normalized.includes(query)) value += 70;
+      else if (query && query.includes(normalized) && normalized.length >= 4) value += 50;
+
+      // 完整合集/全集优先，预告/花絮/解说等非主资源降权
+      if (/(全集|全季|合集|完结|全\d+集|S\d+完)/i.test(title)) value += 30;
+      if (/(预告|预览|花絮|解说|剪辑|片段|采访|短片)/i.test(title)) value -= 25;
+
+      // 常见质量标签
+      if (/(4K|2160p|UHD)/i.test(title)) value += 18;
+      else if (/1080p/i.test(title)) value += 12;
+      else if (/720p/i.test(title)) value += 5;
+      if (/(BluRay|Blu-ray|Remux)/i.test(title)) value += 12;
+      if (/(HDR|杜比|Dolby|DV|全景声|Atmos)/i.test(title)) value += 8;
+      if (/(简中|繁中|中字|中英|双语)/i.test(title)) value += 4;
+
+      // 有描述、图片、密码信息的结果更适合直接使用
+      if (item.content) value += 3;
+      if (item.image) value += 8;
+      if (/[?&](password|pwd)=/i.test(item.cloudLinks[0] || "")) value += 2;
+
+      // 新鲜度最多加 10 分，避免完全压过标题匹配
+      if (item.pubDate) {
+        const time = Date.parse(item.pubDate);
+        if (!Number.isNaN(time)) {
+          const days = Math.max(0, (now - time) / 86_400_000);
+          value += Math.max(0, 10 - Math.min(days, 10));
+        }
+      }
+      return value;
+    };
+
+    return items
+      .map((item, index) => ({ item, index, score: score(item) }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map(({ item }) => item);
+  }
   /** 给仍然没有图片的结果按标题补 TMDB/豆瓣海报。 */
   private async fillMissingPosters(items: SearchItem[]): Promise<void> {
     const titles = [
