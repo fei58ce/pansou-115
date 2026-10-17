@@ -9,6 +9,10 @@ export interface GlobalSettingAttributes {
   CommonUserCode: number;
   AdminUserCode: number;
   tmdbApiKey: string;
+  oneStrmBaseUrl: string;
+  oneStrmWebhookToken: string;
+  oneStrmScanPath: string;
+  oneStrmAutoTrigger: boolean;
 }
 
 interface GlobalSettingCreationAttributes extends Optional<GlobalSettingAttributes, "id"> {}
@@ -24,6 +28,10 @@ class GlobalSetting
   public CommonUserCode!: number;
   public AdminUserCode!: number;
   public tmdbApiKey!: string;
+  public oneStrmBaseUrl!: string;
+  public oneStrmWebhookToken!: string;
+  public oneStrmScanPath!: string;
+  public oneStrmAutoTrigger!: boolean;
 }
 
 GlobalSetting.init(
@@ -62,6 +70,26 @@ GlobalSetting.init(
       type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "",
+    },
+    oneStrmBaseUrl: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "",
+    },
+    oneStrmWebhookToken: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "",
+    },
+    oneStrmScanPath: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "/emby",
+    },
+    oneStrmAutoTrigger: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {

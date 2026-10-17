@@ -5,6 +5,10 @@
   AdminUserCode: number;
   CommonUserCode: number;
   tmdbApiKey?: string;
+  oneStrmBaseUrl?: string;
+  oneStrmWebhookToken?: string;
+  oneStrmScanPath?: string;
+  oneStrmAutoTrigger?: boolean;
 }
 
 export interface UserSettingAttributes {

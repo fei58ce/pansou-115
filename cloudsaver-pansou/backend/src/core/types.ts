@@ -4,6 +4,7 @@ export const TYPES = {
   QuarkService: Symbol.for("QuarkService"),
   Searcher: Symbol.for("Searcher"),
   PansouSearcher: Symbol.for("PansouSearcher"),
+  OneStrmService: Symbol.for("OneStrmService"),
   DoubanService: Symbol.for("DoubanService"),
   TmdbService: Symbol.for("TmdbService"),
   Cloud115QrcodeService: Symbol.for("Cloud115QrcodeService"),

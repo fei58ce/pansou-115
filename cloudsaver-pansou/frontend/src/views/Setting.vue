@@ -87,6 +87,30 @@
               </el-input-number>
             </div>
           </div>
+          <!-- OneStrm 配置组 -->
+          <div class="settings-group">
+            <h3>OneStrm 联动</h3>
+            <div class="form-row">
+              <div class="form-item full-width">
+                <label for="oneStrmBaseUrl">OneStrm 地址</label>
+                <el-input id="oneStrmBaseUrl" v-model="localGlobalSetting.oneStrmBaseUrl" placeholder="例如 http://8.133.190.156:58003" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-item">
+                <label for="oneStrmWebhookToken">Webhook Token</label>
+                <el-input id="oneStrmWebhookToken" v-model="localGlobalSetting.oneStrmWebhookToken" type="password" show-password placeholder="OneStrm 用户中心中的 Webhook_token" />
+              </div>
+              <div class="form-item">
+                <label for="oneStrmScanPath">扫描路径</label>
+                <el-input id="oneStrmScanPath" v-model="localGlobalSetting.oneStrmScanPath" placeholder="/emby" />
+              </div>
+            </div>
+            <div class="form-row">
+              <el-switch v-model="localGlobalSetting.oneStrmAutoTrigger" active-text="转存后允许触发 OneStrm 扫描" />
+            </div>
+          </div>
+
           <!-- TMDB 配置组 -->
           <div class="settings-group">
             <h3>TMDB 榜单设置</h3>
@@ -212,6 +236,10 @@ const localGlobalSetting = ref<GlobalSettingAttributes>({
   AdminUserCode: 230713,
   CommonUserCode: 9527,
   tmdbApiKey: "",
+  oneStrmBaseUrl: "",
+  oneStrmWebhookToken: "",
+  oneStrmScanPath: "/emby",
+  oneStrmAutoTrigger: false,
 });
 
 const localUserSettings = ref<UserSettingAttributes>({

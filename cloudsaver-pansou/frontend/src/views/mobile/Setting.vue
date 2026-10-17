@@ -41,6 +41,21 @@
       </div>
     </div>
 
+    <!-- OneStrm 设置 -->
+    <div class="setting__section" v-if="settingStore.globalSetting">
+      <div class="setting__title">OneStrm 联动</div>
+      <div class="setting__card">
+        <van-cell-group inset>
+          <van-field v-model="localGlobalSetting.oneStrmBaseUrl" label="OneStrm地址" placeholder="http://8.133.190.156:58003" />
+          <van-field v-model="localGlobalSetting.oneStrmWebhookToken" type="password" label="Webhook Token" placeholder="Webhook_token" />
+          <van-field v-model="localGlobalSetting.oneStrmScanPath" label="扫描路径" placeholder="/emby" />
+          <van-cell center title="转存后允许触发 OneStrm">
+            <template #right-icon><van-switch v-model="localGlobalSetting.oneStrmAutoTrigger" size="24px" /></template>
+          </van-cell>
+        </van-cell-group>
+      </div>
+    </div>
+
     <!-- 用户设置 -->
     <div class="setting__section">
       <div class="setting__title">用户配置</div>
@@ -120,6 +135,10 @@ const localGlobalSetting = ref<GlobalSettingAttributes>({
   AdminUserCode: 230713,
   CommonUserCode: 9527,
   tmdbApiKey: "",
+  oneStrmBaseUrl: "",
+  oneStrmWebhookToken: "",
+  oneStrmScanPath: "/emby",
+  oneStrmAutoTrigger: false,
 });
 
 const localUserSettings = ref<UserSettingAttributes>({

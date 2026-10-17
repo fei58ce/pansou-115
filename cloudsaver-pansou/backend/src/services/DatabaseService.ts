@@ -13,6 +13,10 @@ const DEFAULT_GLOBAL_SETTINGS = {
   CommonUserCode: 9527,
   AdminUserCode: 230713,
   tmdbApiKey: "",
+  oneStrmBaseUrl: "",
+  oneStrmWebhookToken: "",
+  oneStrmScanPath: "/emby",
+  oneStrmAutoTrigger: false,
 };
 
 export class DatabaseService {

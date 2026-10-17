@@ -7,6 +7,7 @@ import { Cloud115Service } from "./services/Cloud115Service";
 import { QuarkService } from "./services/QuarkService";
 import { Searcher } from "./services/Searcher";
 import { PansouSearcher } from "./services/PansouSearcher";
+import { OneStrmService } from "./services/OneStrmService";
 import { DoubanService } from "./services/DoubanService";
 import { TmdbService } from "./services/TmdbService";
 import { Cloud115QrcodeService } from "./services/Cloud115QrcodeService";
@@ -34,6 +35,7 @@ container.bind<Cloud115Service>(TYPES.Cloud115Service).to(Cloud115Service).inSin
 container.bind<QuarkService>(TYPES.QuarkService).to(QuarkService).inSingletonScope();
 container.bind<Searcher>(TYPES.Searcher).to(Searcher).inSingletonScope();
 container.bind<PansouSearcher>(TYPES.PansouSearcher).to(PansouSearcher).inSingletonScope();
+container.bind<OneStrmService>(TYPES.OneStrmService).to(OneStrmService).inSingletonScope();
 container.bind<ImageService>(TYPES.ImageService).to(ImageService).inSingletonScope();
 container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
 container.bind<DoubanService>(TYPES.DoubanService).to(DoubanService).inSingletonScope();
