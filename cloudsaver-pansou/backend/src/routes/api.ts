@@ -60,6 +60,12 @@ router.post("/cloud115/lixian/add", (req, res) => cloud115QrcodeController.addLi
 router.get("/cloud115/lixian/tasks", (req, res) =>
   cloud115QrcodeController.getLixianTasks(req, res)
 );
+router.get("/cloud115/lixian/history", (req, res) =>
+  cloud115QrcodeController.getLixianHistory(req, res)
+);
+router.post("/cloud115/lixian/retry", (req, res) =>
+  cloud115QrcodeController.retryLixianTask(req, res)
+);
 
 // 夸克网盘相关
 router.get("/quark/share-info", (req, res) => quarkController.getShareInfo(req, res));

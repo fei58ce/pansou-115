@@ -7,6 +7,7 @@ import { BaseController } from "./BaseController";
 import { getCookieFromRequest } from "../utils/cookieHelper";
 import { logger } from "../utils/logger";
 import QRCode from "qrcode";
+import LixianTaskRecord from "../models/LixianTaskRecord";
 
 /**
  * 115 网盘扩展控制器：
@@ -98,8 +99,73 @@ export class Cloud115QrcodeController extends BaseController {
       if (!url) {
         throw new Error("缺少 url");
       }
-      const data = await this.lixianService.addTask(cookie, { url, cid });
-      return { data, message: data.message };
+      const userId = (req as any).user?.userId;
+      if (!userId) throw new Error("用户ID无效");
+      const record = await LixianTaskRecord.create({
+        userId,
+        url: String(url),
+        cid: cid || "0",
+      });
+      try {
+        const data = await this.lixianService.addTask(cookie, { url, cid });
+        await record.update({
+          taskId: data.taskId || "",
+          status: 0,
+          statusText: "已提交",
+          name: data.message,
+        });
+        return { data: { ...data, recordId: record.id }, message: data.message };
+      } catch (error) {
+        await record.update({
+          status: 3,
+          statusText: "提交失败",
+          lastError: error instanceof Error ? error.message : "提交失败",
+        });
+        throw error;
+      }
+    });
+  }
+
+  /** 获取本站保存的离线任务提交历史 */
+  async getLixianHistory(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const userId = (req as any).user?.userId;
+      if (!userId) throw new Error("用户ID无效");
+      const data = await LixianTaskRecord.findAll({
+        where: { userId },
+        order: [["createdAt", "DESC"]],
+        limit: 100,
+      });
+      return { data };
+    });
+  }
+
+  /** 重试本站记录的失败离线任务 */
+  async retryLixianTask(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const userId = (req as any).user?.userId;
+      const recordId = String(req.body?.recordId || "");
+      if (!userId || !recordId) throw new Error("缺少任务记录");
+      const record = await LixianTaskRecord.findOne({ where: { id: recordId, userId } });
+      if (!record) throw new Error("任务记录不存在");
+      const cookie = await getCookieFromRequest(req, "cloud115");
+      try {
+        const data = await this.lixianService.addTask(cookie, { url: record.url, cid: record.cid });
+        await record.update({
+          taskId: data.taskId || "",
+          status: 0,
+          statusText: "已重试",
+          lastError: "",
+        });
+        return { data: { ...data, recordId: record.id }, message: data.message };
+      } catch (error) {
+        await record.update({
+          status: 3,
+          statusText: "重试失败",
+          lastError: error instanceof Error ? error.message : "重试失败",
+        });
+        throw error;
+      }
     });
   }
 

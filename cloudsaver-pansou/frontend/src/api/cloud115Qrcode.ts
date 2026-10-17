@@ -1,4 +1,4 @@
-import request from "@/utils/request";
+﻿import request from "@/utils/request";
 
 export type QrcodeStatus = "pending" | "scanned" | "confirmed" | "expired" | "canceled" | "error";
 
@@ -70,5 +70,15 @@ export const cloud115QrcodeApi = {
   async getLixianTasks() {
     const res = await request.get<LixianTask[]>("/api/cloud115/lixian/tasks");
     return assertOk(res, "获取离线任务失败");
+  },
+
+  async getLixianHistory() {
+    const res = await request.get("/api/cloud115/lixian/history");
+    return assertOk(res, "获取离线历史失败");
+  },
+
+  async retryLixianTask(recordId: string) {
+    const res = await request.post("/api/cloud115/lixian/retry", { recordId });
+    return assertOk(res, "重试离线任务失败");
   },
 };
