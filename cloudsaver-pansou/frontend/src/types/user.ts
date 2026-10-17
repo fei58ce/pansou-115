@@ -1,9 +1,10 @@
-export interface GlobalSettingAttributes {
+﻿export interface GlobalSettingAttributes {
   httpProxyHost: string;
   httpProxyPort: string | number;
   isProxyEnabled: boolean;
   AdminUserCode: number;
   CommonUserCode: number;
+  tmdbApiKey?: string;
 }
 
 export interface UserSettingAttributes {

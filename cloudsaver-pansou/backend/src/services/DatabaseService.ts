@@ -1,4 +1,4 @@
-import { Sequelize, QueryTypes } from "sequelize";
+﻿import { Sequelize, QueryTypes } from "sequelize";
 import GlobalSetting from "../models/GlobalSetting";
 import { Searcher } from "./Searcher";
 import sequelize from "../config/database";
@@ -11,6 +11,7 @@ const DEFAULT_GLOBAL_SETTINGS = {
   isProxyEnabled: false,
   CommonUserCode: 9527,
   AdminUserCode: 230713,
+  tmdbApiKey: "",
 };
 
 export class DatabaseService {

@@ -87,6 +87,26 @@
               </el-input-number>
             </div>
           </div>
+          <!-- TMDB 配置组 -->
+          <div class="settings-group">
+            <h3>TMDB 榜单设置</h3>
+            <div class="form-row">
+              <div class="form-item full-width">
+                <label for="tmdbApiKey">TMDB API Key</label>
+                <el-input
+                  id="tmdbApiKey"
+                  v-model="localGlobalSetting.tmdbApiKey"
+                  type="password"
+                  show-password
+                  placeholder="填入 TMDB API 密钥（v3），保存后榜单立即生效"
+                >
+                  <template #prefix>
+                    <el-icon><Film /></el-icon>
+                  </template>
+                </el-input>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </el-card>
@@ -169,6 +189,7 @@ import { ElMessage } from "element-plus";
 import type { GlobalSettingAttributes, UserSettingAttributes } from "@/types/user";
 import {
   Connection,
+  Film,
   Monitor,
   Position,
   Key,
@@ -188,6 +209,7 @@ const localGlobalSetting = ref<GlobalSettingAttributes>({
   isProxyEnabled: false,
   AdminUserCode: 230713,
   CommonUserCode: 9527,
+  tmdbApiKey: "",
 });
 
 const localUserSettings = ref<UserSettingAttributes>({

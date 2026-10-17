@@ -1,4 +1,4 @@
-export interface ResourceItem {
+﻿export interface ResourceItem {
   id: string;
   title: string;
   channel: string;
@@ -119,6 +119,7 @@ export interface GlobalSettingAttributes {
   isProxyEnabled: boolean;
   AdminUserCode: number;
   CommonUserCode: number;
+  tmdbApiKey?: string;
 }
 export interface UserSettingAttributes {
   cloud115Cookie: string;

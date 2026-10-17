@@ -1,5 +1,6 @@
-import axios, { AxiosInstance } from "axios";
+﻿import axios, { AxiosInstance } from "axios";
 import { config } from "../config";
+import GlobalSetting from "../models/GlobalSetting";
 import { logger } from "../utils/logger";
 import { injectable } from "inversify";
 
@@ -79,10 +80,24 @@ export class TmdbService {
     });
   }
 
-  private getApiKey(): string {
+  /**
+   * 获取 TMDB API Key。
+   * 优先读数据库全局设置（管理员在设置页配置，保存即生效），
+   * 未配置时回退到环境变量 TMDB_API_KEY。
+   */
+  private async getApiKey(): Promise<string> {
+    try {
+      const settings = await GlobalSetting.findOne();
+      const dbKey = settings?.dataValues?.tmdbApiKey?.trim();
+      if (dbKey) {
+        return dbKey;
+      }
+    } catch (error) {
+      logger.error("读取 TMDB 数据库配置失败，回退环境变量:", error);
+    }
     const key = config.tmdb.apiKey;
     if (!key) {
-      throw new Error("未配置 TMDB_API_KEY 环境变量");
+      throw new Error("未配置 TMDB API Key，请在设置页或 TMDB_API_KEY 环境变量中配置");
     }
     return key;
   }
@@ -143,7 +158,7 @@ export class TmdbService {
     timeWindow: TmdbTimeWindow = "week",
     language?: string
   ): Promise<TmdbItem[]> {
-    const apiKey = this.getApiKey();
+    const apiKey = await this.getApiKey();
     const lang = language || config.tmdb.language;
     try {
       const { data } = await this.api.get<TmdbTrendingResponse>(
@@ -161,7 +176,7 @@ export class TmdbService {
    * 获取电影/电视榜单
    */
   async getPopular(mediaType: "movie" | "tv", page = 1, language?: string): Promise<TmdbItem[]> {
-    const apiKey = this.getApiKey();
+    const apiKey = await this.getApiKey();
     const lang = language || config.tmdb.language;
     try {
       const { data } = await this.api.get<TmdbTrendingResponse>(`/${mediaType}/popular`, {
@@ -178,7 +193,7 @@ export class TmdbService {
    * 获取高评分榜单
    */
   async getTopRated(mediaType: "movie" | "tv", page = 1, language?: string): Promise<TmdbItem[]> {
-    const apiKey = this.getApiKey();
+    const apiKey = await this.getApiKey();
     const lang = language || config.tmdb.language;
     try {
       const { data } = await this.api.get<TmdbTrendingResponse>(`/${mediaType}/top_rated`, {
@@ -195,7 +210,7 @@ export class TmdbService {
    * 获取正在上映 / 正在播出
    */
   async getNowPlaying(mediaType: "movie" | "tv", page = 1, language?: string): Promise<TmdbItem[]> {
-    const apiKey = this.getApiKey();
+    const apiKey = await this.getApiKey();
     const lang = language || config.tmdb.language;
     const endpoint = mediaType === "movie" ? "now_playing" : "on_the_air";
     try {
@@ -213,7 +228,7 @@ export class TmdbService {
    * 获取类型列表
    */
   async getGenres(mediaType: "movie" | "tv", language?: string): Promise<TmdbGenre[]> {
-    const apiKey = this.getApiKey();
+    const apiKey = await this.getApiKey();
     const lang = language || config.tmdb.language;
     try {
       const { data } = await this.api.get<TmdbGenreResponse>(`/genre/${mediaType}/list`, {

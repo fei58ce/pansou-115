@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional } from "sequelize";
+﻿import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 
 export interface GlobalSettingAttributes {
@@ -8,6 +8,7 @@ export interface GlobalSettingAttributes {
   isProxyEnabled: boolean;
   CommonUserCode: number;
   AdminUserCode: number;
+  tmdbApiKey: string;
 }
 
 interface GlobalSettingCreationAttributes extends Optional<GlobalSettingAttributes, "id"> {}
@@ -22,6 +23,7 @@ class GlobalSetting
   public isProxyEnabled!: boolean;
   public CommonUserCode!: number;
   public AdminUserCode!: number;
+  public tmdbApiKey!: string;
 }
 
 GlobalSetting.init(
@@ -55,6 +57,11 @@ GlobalSetting.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 230713,
+    },
+    tmdbApiKey: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
     },
   },
   {

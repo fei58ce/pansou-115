@@ -61,6 +61,11 @@
               />
             </template>
           </van-field>
+          <van-field
+            v-model="localGlobalSetting.tmdbApiKey"
+            label="TMDB Key"
+            placeholder="TMDB API 密钥，保存后生效"
+          />
           <van-cell title="115扫码登录" is-link @click="qrcodeDialog = true">
             <template #icon>
               <van-icon name="qr" style="margin-right: 8px" />
@@ -112,6 +117,7 @@ const localGlobalSetting = ref<GlobalSettingAttributes>({
   isProxyEnabled: false,
   AdminUserCode: 230713,
   CommonUserCode: 9527,
+  tmdbApiKey: "",
 });
 
 const localUserSettings = ref<UserSettingAttributes>({
