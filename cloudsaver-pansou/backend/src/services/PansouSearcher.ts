@@ -8,6 +8,7 @@ interface PansouMergedLink {
   password?: string;
   note?: string;
   datetime?: string;
+  images?: string[];
 }
 
 interface PansouResultImage {
@@ -70,7 +71,7 @@ export class PansouSearcher {
         content: link.note || "",
         messageId: "",
         tags: [],
-        image: this.matchImage(link, titleImageMap),
+        image: link.images?.[0] || this.matchImage(link, titleImageMap),
         // 磁力类型：magnet 类型时把 url 放入 magnet 字段
         magnet: targetType === "magnet" ? [link.url] : undefined,
         ed2k: targetType === "ed2k" ? [link.url] : undefined,
