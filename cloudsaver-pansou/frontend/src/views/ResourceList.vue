@@ -59,6 +59,7 @@
         @jump="handleJump"
         @search-moviefor-tag="searchMovieforTag"
         @save="handleSave"
+        @lixian="handleLixian"
       />
 
       <!-- 空状态 -->
@@ -143,6 +144,45 @@
       </template>
     </el-dialog>
 
+    <!-- 115 离线下载：选择保存目录 -->
+    <el-dialog
+      v-model="lixianDialogVisible"
+      title="115 离线下载 · 选择保存目录"
+      width="580px"
+      destroy-on-close
+    >
+      <div v-if="lixianResource" class="dialog-header" style="margin-bottom: 12px">
+        <div class="title-sub">
+          <span class="resource-title" :title="lixianResource.title">{{ lixianResource.title }}</span>
+        </div>
+        <div class="file-size" style="font-size: 12px; word-break: break-all; margin-top: 4px">
+          {{ resourceStore.extractMagnets(lixianResource)[0]?.slice(0, 80) }}...
+        </div>
+      </div>
+      <folder-select
+        v-if="lixianDialogVisible"
+        cloud-type="pan115"
+        @select="handleLixianFolderSelect"
+        @close="lixianDialogVisible = false"
+      />
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="lixianDialogVisible = false">取消</el-button>
+          <el-button type="warning" plain @click="submitLixian('0')" :loading="lixianSubmitting">
+            保存到根目录
+          </el-button>
+          <el-button
+            type="warning"
+            :disabled="!lixianFolderId"
+            :loading="lixianSubmitting"
+            @click="submitLixian()"
+          >
+            保存到此目录
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 加载状态 -->
     <div v-if="resourceStore.loading" class="pc-resources__loading">
       <div class="loading-text">加载中...</div>
@@ -167,6 +207,7 @@ import ResourceCard from "@/components/Home/ResourceCard.vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { ArrowUp } from "@element-plus/icons-vue";
+import { add115Lixian } from "@/utils/magnet";
 const router = useRouter();
 
 const resourceStore = useResourceStore();
@@ -175,6 +216,12 @@ const saveDialogVisible = ref(false);
 const currentResource = ref<ResourceItem | null>(null);
 const currentFolderId = ref<string | null>(null);
 const saveDialogStep = ref<1 | 2>(1);
+
+// 115 离线下载选目录
+const lixianDialogVisible = ref(false);
+const lixianResource = ref<ResourceItem | null>(null);
+const lixianFolderId = ref<string | null>(null);
+const lixianSubmitting = ref(false);
 
 const refreshResources = async () => {
   resourceStore.searchResources("", false);
@@ -232,7 +279,58 @@ const handleLoadMore = (channelId: string) => {
 };
 
 const handleJump = (resource: ResourceItem) => {
-  window.open(resource.cloudLinks[0], "_blank");
+  const link =
+    resource.cloudLinks?.find((l) => !/^magnet:/i.test(l)) ||
+    resource.cloudLinks?.[0] ||
+    resource.magnet?.[0];
+  if (!link) {
+    ElMessage.warning("没有可跳转的链接");
+    return;
+  }
+  // 磁力链交给系统默认客户端处理
+  if (/^magnet:/i.test(link)) {
+    window.location.href = link;
+    return;
+  }
+  window.open(link, "_blank");
+};
+
+/** 打开 115 离线下载选目录弹窗 */
+const handleLixian = (resource: ResourceItem) => {
+  const magnet = resourceStore.extractMagnets(resource)[0];
+  if (!magnet) {
+    ElMessage.warning("没有可下载的磁力链");
+    return;
+  }
+  lixianResource.value = resource;
+  lixianFolderId.value = null;
+  lixianDialogVisible.value = true;
+};
+
+const handleLixianFolderSelect = (folderId: string) => {
+  lixianFolderId.value = folderId;
+};
+
+/** 提交 115 离线任务；cid 不传则用已选目录 */
+const submitLixian = async (cid?: string) => {
+  if (!lixianResource.value) return;
+  const magnet = resourceStore.extractMagnets(lixianResource.value)[0];
+  if (!magnet) {
+    ElMessage.warning("没有可下载的磁力链");
+    return;
+  }
+  const targetCid = cid ?? lixianFolderId.value ?? "0";
+  lixianSubmitting.value = true;
+  try {
+    const ok = await add115Lixian(magnet, targetCid);
+    if (ok) {
+      lixianDialogVisible.value = false;
+      lixianResource.value = null;
+      lixianFolderId.value = null;
+    }
+  } finally {
+    lixianSubmitting.value = false;
+  }
 };
 
 const searchMovieforTag = (tag: string) => {

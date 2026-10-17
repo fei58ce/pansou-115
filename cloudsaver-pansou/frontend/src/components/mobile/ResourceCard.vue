@@ -48,11 +48,28 @@
               </van-tag>
             </div>
 
-            <!-- 转存按钮 -->
+            <!-- 操作按钮 -->
             <div class="info__action">
               <van-button type="primary" size="mini" round plain @click="handleJump(item)">
                 跳转
               </van-button>
+              <van-button
+                v-if="item.isSupportMagnet"
+                type="warning"
+                size="mini"
+                round
+                plain
+                @click="handleCopyMagnet(item)"
+                >复制磁力</van-button
+              >
+              <van-button
+                v-if="item.isSupportMagnet"
+                type="warning"
+                size="mini"
+                round
+                @click="handle115Lixian(item)"
+                >115离线</van-button
+              >
               <van-button
                 v-if="item.isSupportSave"
                 type="primary"
@@ -72,41 +89,38 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
-import { showNotify } from "vant";
 import type { ResourceItem } from "@/types";
 import { getProxyImageUrl } from "@/utils/image";
+import { copyText, copyMagnet } from "@/utils/magnet";
 
-// Props 定义
 const props = defineProps<{
   currentChannelId: string;
 }>();
 
-// 事件定义
 const emit = defineEmits<{
   (e: "save", resource: ResourceItem): void;
   (e: "jump", resource: ResourceItem): void;
   (e: "searchMovieforTag", tag: string): void;
+  (e: "lixian", resource: ResourceItem): void;
 }>();
 
-// 状态管理
 const store = useResourceStore();
 
-// 计算属性
 const dataList = computed(() => {
   const channel = store.resources.find((item) => item.id === props.currentChannelId);
   return channel?.list || [];
 });
 
-// 标签颜色映射
 const getTagColor = (type?: string) => {
   const colorMap: Record<string, string> = {
     pan115: "#07c160",
     quark: "#1989fa",
+    magnet: "#ff976a",
+    ed2k: "#7232dd",
   };
   return colorMap[type || ""] || "#ff976a";
 };
 
-// 方法定义
 const handleSave = (resource: ResourceItem) => {
   emit("save", resource);
 };
@@ -116,37 +130,25 @@ const handleJump = (resource: ResourceItem) => {
 };
 
 const copyUrl = async (url: string) => {
-  try {
-    await navigator.clipboard.writeText(url);
-    showNotify({
-      type: "success",
-      message: "链接已复制到剪贴板",
-      duration: 1500,
-    });
-  } catch (err) {
-    const input = document.createElement("input");
-    input.value = url;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand("copy");
-    document.body.removeChild(input);
+  await copyText(url, "链接已复制到剪贴板");
+};
 
-    showNotify({
-      type: "success",
-      message: "链接已复制到剪贴板",
-      duration: 1500,
-    });
-  }
+const handleCopyMagnet = (resource: ResourceItem) => {
+  const magnet = store.extractMagnets(resource)[0];
+  copyMagnet(magnet);
+};
+
+/** 交给父组件选目录后提交 115 离线 */
+const handle115Lixian = (resource: ResourceItem) => {
+  emit("lixian", resource);
 };
 
 const searchMovieforTag = (tag: string) => {
   emit("searchMovieforTag", tag);
 };
 
-// 展开状态管理
 const expandedItems = ref<Record<string, boolean>>({});
 
-// 切换展开状态
 const toggleExpand = (id: string) => {
   expandedItems.value[id] = !expandedItems.value[id];
 };
@@ -277,16 +279,19 @@ const toggleExpand = (id: string) => {
   &__action {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
     padding: 4px 0;
 
     .van-button {
-      font-size: 13px;
-      height: 32px;
-      padding: 0 20px;
+      font-size: 12px;
+      height: 28px;
+      padding: 0 12px;
+      margin: 0;
 
       :deep(.van-button__text) {
         font-weight: 500;
-        font-size: 14px;
+        font-size: 12px;
       }
 
       &:active {

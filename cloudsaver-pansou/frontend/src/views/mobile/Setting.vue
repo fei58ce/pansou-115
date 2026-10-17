@@ -52,7 +52,7 @@
             label="115网盘"
             rows="2"
             autosize
-            placeholder="请输入115网盘Cookie"
+            placeholder="扫码登录或手动填写Cookie"
           >
             <template #right-icon>
               <van-icon
@@ -61,6 +61,11 @@
               />
             </template>
           </van-field>
+          <van-cell title="115扫码登录" is-link @click="qrcodeDialog = true">
+            <template #icon>
+              <van-icon name="qr" style="margin-right: 8px" />
+            </template>
+          </van-cell>
 
           <van-field
             v-model="localUserSettings.quarkCookie"
@@ -79,8 +84,10 @@
           </van-field>
         </van-cell-group>
       </div>
-
     </div>
+
+    <!-- 115 扫码登录弹窗 -->
+    <Cloud115QrcodeLogin v-model="qrcodeDialog" @success="onQrcodeSuccess" />
 
     <!-- 保存按钮 -->
     <div class="setting__submit">
@@ -94,10 +101,11 @@ import { useUserSettingStore } from "@/stores/userSetting";
 import { ref, watch } from "vue";
 import { showNotify } from "vant";
 import type { GlobalSettingAttributes, UserSettingAttributes } from "@/types/user";
+import Cloud115QrcodeLogin from "@/components/Cloud115QrcodeLogin.vue";
 
 const settingStore = useUserSettingStore();
+const qrcodeDialog = ref(false);
 
-// 本地状态
 const localGlobalSetting = ref<GlobalSettingAttributes>({
   httpProxyHost: "127.0.0.1",
   httpProxyPort: "7890",
@@ -111,7 +119,6 @@ const localUserSettings = ref<UserSettingAttributes>({
   quarkCookie: "",
 });
 
-// 添加显示/隐藏密码的状态
 const showCloud115Cookie = ref(false);
 const showQuarkCookie = ref(false);
 
@@ -170,10 +177,13 @@ const handleSave = async () => {
 
 // 处理代理地址,去除协议前缀
 const handleProxyHostChange = (val: string) => {
-  // 移除 http:// 或 https:// 前缀
   const cleanHost = val.replace(/^(https?:\/\/)/i, "");
-  // 更新状态
   localGlobalSetting.value.httpProxyHost = cleanHost;
+};
+
+const onQrcodeSuccess = async () => {
+  await settingStore.getSettings();
+  showNotify({ type: "success", message: "115 扫码登录成功，cookie 已更新" });
 };
 </script>
 

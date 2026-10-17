@@ -92,6 +92,8 @@ export const useResourceStore = defineStore("resource", {
       aliyun: "warning",
       pan115: "danger",
       quark: "success",
+      magnet: "warning",
+      ed2k: "info",
     },
     keyword: "",
     resources: lastResource.list,
@@ -107,6 +109,21 @@ export const useResourceStore = defineStore("resource", {
     setLoadTree(loadTree: boolean) {
       this.loadTree = loadTree;
     },
+
+    /**
+     * 从资源项中提取磁力链（兼容 magnet 字段、cloudLinks、cloudType）
+     */
+    extractMagnets(item: ResourceItem): string[] {
+      const magnetPattern = /^magnet:\?xt=urn:btih:/i;
+      const fromField = (item.magnet || []).filter((m) => magnetPattern.test(m));
+      const fromLinks = (item.cloudLinks || []).filter((m) => magnetPattern.test(m));
+      // PanSou magnet 渠道可能把磁力放在 cloudLinks 且 cloudType=magnet
+      if (item.cloudType === "magnet" && fromLinks.length === 0 && item.cloudLinks?.length) {
+        return [...new Set([...fromField, ...item.cloudLinks])];
+      }
+      return [...new Set([...fromField, ...fromLinks])];
+    },
+
     // 搜索资源
     async searchResources(keyword?: string, isLoadMore = false, channelId?: string): Promise<void> {
       this.loading = true;
@@ -132,10 +149,29 @@ export const useResourceStore = defineStore("resource", {
           .filter((item) => item.list.length > 0)
           .map((x) => ({
             ...x,
-            list: x.list.map((item) => ({
-              ...item,
-              isSupportSave: CLOUD_DRIVES.some((drive) => drive.regex.test(item.cloudLinks[0])),
-            })),
+            list: x.list.map((item) => {
+              const magnets = this.extractMagnets(item);
+              const firstLink = item.cloudLinks?.[0] || magnets[0] || "";
+              // 统一网盘类型命名（PanSou 返回 "115"，前端标签用 "pan115"）
+              const cloudTypeMap: Record<string, string> = {
+                "115": "pan115",
+                pan115: "pan115",
+                quark: "quark",
+                baidu: "baiduPan",
+                aliyun: "aliyun",
+                magnet: "magnet",
+                ed2k: "ed2k",
+              };
+              const cloudType = cloudTypeMap[item.cloudType] || item.cloudType;
+              return {
+                ...item,
+                cloudType,
+                magnet: magnets.length ? magnets : item.magnet,
+                cloudLinks: item.cloudLinks?.length ? item.cloudLinks : magnets,
+                isSupportSave: CLOUD_DRIVES.some((drive) => drive.regex.test(firstLink)),
+                isSupportMagnet: magnets.length > 0,
+              };
+            }),
           }));
         console.log(data);
         if (isLoadMore) {

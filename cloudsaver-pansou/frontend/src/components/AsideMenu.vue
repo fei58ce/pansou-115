@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Search, Film, Setting } from "@element-plus/icons-vue";
+import { Search, Film, Star, Setting } from "@element-plus/icons-vue";
 import logo from "@/assets/images/logo.png";
 import { PROJECT_GITHUB } from "@/constants/project";
 import pkg from "../../package.json";
@@ -125,6 +125,12 @@ const menuList: MenuItem[] = [
   },
   {
     index: "3",
+    title: "TMDB榜单",
+    icon: Star,
+    router: "/tmdb",
+  },
+  {
+    index: "4",
     title: "设置",
     icon: Setting,
     router: "/setting",

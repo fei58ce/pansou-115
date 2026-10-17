@@ -5,6 +5,10 @@ export interface ResourceItem {
   channelId?: string;
   image?: string;
   cloudLinks: string[];
+  /** 磁力链接列表 */
+  magnet?: string[];
+  /** 电驴链接列表 */
+  ed2k?: string[];
   tags?: string[];
   content?: string;
   pubDate: string;
@@ -12,6 +16,8 @@ export interface ResourceItem {
   messageId?: string;
   isLastMessage?: boolean;
   isSupportSave?: boolean;
+  /** 是否支持复制磁力 / 115 离线下载 */
+  isSupportMagnet?: boolean;
 }
 
 export interface Resource {
@@ -103,6 +109,8 @@ export interface TagColor {
   aliyun: string;
   pan115: string;
   quark: string;
+  magnet?: string;
+  ed2k?: string;
 }
 
 export interface GlobalSettingAttributes {

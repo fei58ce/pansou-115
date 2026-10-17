@@ -19,6 +19,10 @@ interface sourceItem {
   cloudLinks?: string[];
   tags?: string[];
   cloudType?: string;
+  /** 磁力链接（从纯文本或 href 中提取） */
+  magnet?: string[];
+  /** 电驴链接 */
+  ed2k?: string[];
 }
 
 @injectable()
@@ -65,19 +69,46 @@ export class Searcher {
     await Searcher.instance.initAxiosInstance(true);
   }
 
-  private extractCloudLinks(text: string): { links: string[]; cloudType: string } {
+  /**
+   * 从文本中提取所有可识别的网盘/下载链接
+   * 返回 { links, cloudType, magnet, ed2k }
+   * - links:    所有网盘/磁力/电驴链接
+   * - cloudType: 第一个匹配到的网盘类型（向后兼容）
+   * - magnet:   单独的磁力链数组
+   * - ed2k:     单的电驴链接数组
+   */
+  private extractCloudLinks(text: string): {
+    links: string[];
+    cloudType: string;
+    magnet: string[];
+    ed2k: string[];
+  } {
     const links: string[] = [];
     let cloudType = "";
-    Object.values(config.cloudPatterns).forEach((pattern, index) => {
+    const magnet: string[] = [];
+    const ed2k: string[] = [];
+
+    Object.entries(config.cloudPatterns).forEach(([key, pattern]) => {
       const matches = text.match(pattern);
-      if (matches) {
-        links.push(...matches);
-        if (!cloudType) cloudType = Object.keys(config.cloudPatterns)[index];
+      if (matches && matches.length > 0) {
+        // 去重
+        const unique = [...new Set(matches)];
+        if (key === "magnet") {
+          magnet.push(...unique);
+        } else if (key === "ed2k") {
+          ed2k.push(...unique);
+        } else {
+          links.push(...unique);
+          if (!cloudType) cloudType = key;
+        }
       }
     });
+
     return {
       links: [...new Set(links)],
       cloudType,
+      magnet: [...new Set(magnet)],
+      ed2k: [...new Set(ed2k)],
     };
   }
 
@@ -98,9 +129,23 @@ export class Searcher {
           logger.debug(`Found ${results.items.length} items in channel ${channel.name}`);
           if (results.items.length > 0) {
             const channelResults = results.items
-              .filter((item: sourceItem) => item.cloudLinks && item.cloudLinks.length > 0)
+              .filter(
+                (item: sourceItem) =>
+                  (item.cloudLinks && item.cloudLinks.length > 0) ||
+                  (item.magnet && item.magnet.length > 0) ||
+                  (item.ed2k && item.ed2k.length > 0)
+              )
               .map((item: sourceItem) => ({
                 ...item,
+                // 仅有磁力/电驴时，给 cloudType 一个可识别的标签
+                cloudType:
+                  item.cloudType ||
+                  (item.magnet?.length ? "magnet" : item.ed2k?.length ? "ed2k" : ""),
+                cloudLinks: item.cloudLinks?.length
+                  ? item.cloudLinks
+                  : item.magnet?.length
+                    ? item.magnet
+                    : item.ed2k || [],
                 channel: channel.name,
                 channelId: channel.id,
               }));
@@ -195,7 +240,14 @@ export class Searcher {
             tags.push(tagText);
           }
         });
-        const cloudInfo = this.extractCloudLinks(links.join(" "));
+        // 提取链接的文本（href + 文本），用于在文本中匹配磁力链
+        const allHrefs = messageEl
+          .find(".tgme_widget_message_text a")
+          .map((_, el) => $(el).attr("href"))
+          .get();
+        const allTexts = messageEl.find(".tgme_widget_message_text").text();
+        // 同时从 href 和纯文本中匹配（磁力链常出现在纯文本中）
+        const cloudInfo = this.extractCloudLinks([...allHrefs, allTexts].join(" "));
         // 添加到数组第一位
         items.unshift({
           messageId,
@@ -206,7 +258,9 @@ export class Searcher {
           cloudLinks: cloudInfo.links,
           cloudType: cloudInfo.cloudType,
           tags,
-        });
+          magnet: cloudInfo.magnet,
+          ed2k: cloudInfo.ed2k,
+        } as any);
       });
       return { items: items, channelLogo };
     } catch (error) {

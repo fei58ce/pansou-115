@@ -29,6 +29,13 @@ services:
       TELEGRAM_BASE_URL: "https://t.me/s"
       TELE_CHANNELS: '[{"id":"Channel_Shares_115","name":"115分享"},{"id":"vip115hot","name":"懒狗115"},{"id":"gimy115iso","name":"剧迷115原盘"}]'
       PANSOU_BASE_URL: "http://pansou:8888"
+      # PanSou 启用类型（含 magnet 磁力搜索）
+      PANSOU_CLOUD_TYPES: "baidu,aliyun,quark,115,xunlei,pikpak,123,magnet,ed2k"
+      # TMDB 榜单（https://www.themoviedb.org/settings/api 申请）
+      TMDB_API_KEY: ""
+      TMDB_BASE_URL: "https://api.themoviedb.org/3"
+      TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p"
+      TMDB_LANGUAGE: "zh-CN"
     depends_on:
       pansou:
         condition: service_healthy

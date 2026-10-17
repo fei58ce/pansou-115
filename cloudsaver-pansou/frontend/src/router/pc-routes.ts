@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/views/Douban.vue"),
       },
       {
+        path: "/tmdb",
+        name: "tmdb",
+        component: () => import("@/views/Tmdb.vue"),
+      },
+      {
         path: "/setting",
         name: "setting",
         component: () => import("@/views/Setting.vue"),

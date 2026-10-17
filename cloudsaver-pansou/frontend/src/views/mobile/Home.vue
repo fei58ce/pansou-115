@@ -31,7 +31,8 @@
     <!-- 底部导航栏 -->
     <van-tabbar class="home__tabbar" route>
       <van-tabbar-item to="/resource" icon="search">搜索</van-tabbar-item>
-      <van-tabbar-item to="/douban" icon="video">热门</van-tabbar-item>
+      <van-tabbar-item to="/douban" icon="video">豆瓣</van-tabbar-item>
+      <van-tabbar-item to="/tmdb" icon="star-o">TMDB</van-tabbar-item>
       <van-tabbar-item to="/setting" icon="setting-o">设置</van-tabbar-item>
     </van-tabbar>
 

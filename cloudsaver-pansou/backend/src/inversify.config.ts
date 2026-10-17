@@ -8,6 +8,9 @@ import { QuarkService } from "./services/QuarkService";
 import { Searcher } from "./services/Searcher";
 import { PansouSearcher } from "./services/PansouSearcher";
 import { DoubanService } from "./services/DoubanService";
+import { TmdbService } from "./services/TmdbService";
+import { Cloud115QrcodeService } from "./services/Cloud115QrcodeService";
+import { Cloud115LixianService } from "./services/Cloud115LixianService";
 import { UserService } from "./services/UserService";
 import { ImageService } from "./services/ImageService";
 import { SettingService } from "./services/SettingService";
@@ -17,6 +20,8 @@ import { Cloud115Controller } from "./controllers/cloud115";
 import { QuarkController } from "./controllers/quark";
 import { ResourceController } from "./controllers/resource";
 import { DoubanController } from "./controllers/douban";
+import { TmdbController } from "./controllers/tmdb";
+import { Cloud115QrcodeController } from "./controllers/cloud115Qrcode";
 import { ImageController } from "./controllers/teleImages";
 import { SettingController } from "./controllers/setting";
 import { UserController } from "./controllers/user";
@@ -32,6 +37,15 @@ container.bind<PansouSearcher>(TYPES.PansouSearcher).to(PansouSearcher).inSingle
 container.bind<ImageService>(TYPES.ImageService).to(ImageService).inSingletonScope();
 container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
 container.bind<DoubanService>(TYPES.DoubanService).to(DoubanService).inSingletonScope();
+container.bind<TmdbService>(TYPES.TmdbService).to(TmdbService).inSingletonScope();
+container
+  .bind<Cloud115QrcodeService>(TYPES.Cloud115QrcodeService)
+  .to(Cloud115QrcodeService)
+  .inSingletonScope();
+container
+  .bind<Cloud115LixianService>(TYPES.Cloud115LixianService)
+  .to(Cloud115LixianService)
+  .inSingletonScope();
 container.bind<UserService>(TYPES.UserService).to(UserService).inSingletonScope();
 container.bind<SponsorsService>(TYPES.SponsorsService).to(SponsorsService).inSingletonScope();
 // Controllers
@@ -39,6 +53,10 @@ container.bind<Cloud115Controller>(TYPES.Cloud115Controller).to(Cloud115Controll
 container.bind<QuarkController>(TYPES.QuarkController).to(QuarkController);
 container.bind<ResourceController>(TYPES.ResourceController).to(ResourceController);
 container.bind<DoubanController>(TYPES.DoubanController).to(DoubanController);
+container.bind<TmdbController>(TYPES.TmdbController).to(TmdbController);
+container
+  .bind<Cloud115QrcodeController>(TYPES.Cloud115QrcodeController)
+  .to(Cloud115QrcodeController);
 container.bind<ImageController>(TYPES.ImageController).to(ImageController);
 container.bind<SettingController>(TYPES.SettingController).to(SettingController);
 container.bind<UserController>(TYPES.UserController).to(UserController);

@@ -58,10 +58,27 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="180">
+          <el-table-column label="操作" width="320">
             <template #default="{ row }">
-              <el-button type="primary" plain @click="handleJump(row)">跳转</el-button>
-              <el-button v-if="row.isSupportSave" @click="handleSave(row)">转存</el-button>
+              <el-button type="primary" plain size="small" @click="handleJump(row)">跳转</el-button>
+              <el-button
+                v-if="row.isSupportMagnet"
+                type="warning"
+                plain
+                size="small"
+                @click="handleCopyMagnet(row)"
+                >复制磁力</el-button
+              >
+              <el-button
+                v-if="row.isSupportMagnet"
+                type="warning"
+                size="small"
+                @click="handle115Lixian(row)"
+                >115离线</el-button
+              >
+              <el-button v-if="row.isSupportSave" size="small" @click="handleSave(row)"
+                >转存</el-button
+              >
             </template>
           </el-table-column>
         </el-table>
@@ -91,21 +108,31 @@
 
 <script setup lang="ts">
 import { useResourceStore } from "@/stores/resource";
-import type { Resource, TagColor } from "@/types";
+import type { ResourceItem, TagColor } from "@/types";
 import { getProxyImageUrl } from "@/utils/image";
+import { copyMagnet } from "@/utils/magnet";
 
 const store = useResourceStore();
-const emit = defineEmits(["save", "loadMore", "searchMovieforTag", "jump"]);
+const emit = defineEmits(["save", "loadMore", "searchMovieforTag", "jump", "lixian"]);
 
-const handleSave = (resource: Resource) => {
+const handleSave = (resource: ResourceItem) => {
   emit("save", resource);
 };
 
-const handleJump = (resource: Resource) => {
+const handleJump = (resource: ResourceItem) => {
   emit("jump", resource);
 };
 
-// 添加加载更多处理函数
+const handleCopyMagnet = (resource: ResourceItem) => {
+  const magnet = store.extractMagnets(resource)[0];
+  copyMagnet(magnet);
+};
+
+/** 交给父组件选目录后提交 115 离线 */
+const handle115Lixian = (resource: ResourceItem) => {
+  emit("lixian", resource);
+};
+
 const handleLoadMore = (channelId: string) => {
   emit("loadMore", channelId);
 };

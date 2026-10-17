@@ -37,9 +37,81 @@
           @save="handleSave"
           @jump="handleJump"
           @search-moviefor-tag="searchMovieforTag"
+          @lixian="handleLixian"
         />
       </van-tab>
     </van-tabs>
+
+    <!-- 115 离线下载：选择保存目录 -->
+    <van-popup
+      v-model:show="lixianDialogVisible"
+      round
+      closeable
+      position="bottom"
+      :style="{ height: '80%', transform: 'translateZ(1px)' }"
+      class="save-popup"
+    >
+      <div class="save-popup__container">
+        <div class="save-popup__header">
+          <van-tag color="#ff976a" round size="medium">magnet</van-tag>
+          <span class="header__title">115离线 · 选择目录</span>
+        </div>
+        <div class="save-popup__content">
+          <folder-select
+            v-if="lixianDialogVisible"
+            cloud-type="pan115"
+            @select="handleLixianFolderSelect"
+            @close="lixianDialogVisible = false"
+          />
+        </div>
+        <div class="save-popup__footer">
+          <van-cell class="footer__path" :border="false">
+            <template #title>
+              <div class="path__label">保存至：</div>
+            </template>
+            <template #value>
+              <div class="path__value">
+                <van-icon name="folder-o" class="value__icon" />
+                <span
+                  class="value__text"
+                  :class="{ 'value__text--placeholder': !lixianFolderPath }"
+                >
+                  {{
+                    lixianFolderPath
+                      ? lixianFolderPath[lixianFolderPath.length - 1]?.name
+                      : "待选择（或点下方根目录）"
+                  }}
+                </span>
+              </div>
+            </template>
+          </van-cell>
+          <div style="display: flex; gap: 8px">
+            <van-button
+              round
+              block
+              type="warning"
+              plain
+              size="large"
+              :loading="lixianSubmitting"
+              @click="submitLixian('0')"
+            >
+              根目录
+            </van-button>
+            <van-button
+              round
+              block
+              type="warning"
+              size="large"
+              :loading="lixianSubmitting"
+              :disabled="!lixianFolderId"
+              @click="submitLixian()"
+            >
+              保存到此
+            </van-button>
+          </div>
+        </div>
+      </div>
+    </van-popup>
 
     <!-- 保存弹窗 -->
     <van-popup
@@ -131,6 +203,7 @@ import type { Folder, ResourceItem } from "@/types";
 import FolderSelect from "@/components/mobile/FolderSelect.vue";
 import ResourceSelect from "@/components/mobile/ResourceSelect.vue";
 import ResourceCard from "@/components/mobile/ResourceCard.vue";
+import { add115Lixian } from "@/utils/magnet";
 
 // 状态管理
 const router = useRouter();
@@ -145,6 +218,13 @@ const saveDialogStep = ref<1 | 2>(1);
 const currentTab = ref<string>("");
 const isLoading = ref(false);
 const listRef = ref<HTMLElement | null>(null);
+
+// 115 离线下载选目录
+const lixianDialogVisible = ref(false);
+const lixianResource = ref<ResourceItem | null>(null);
+const lixianFolderId = ref<string | null>(null);
+const lixianFolderPath = ref<Folder[] | null>(null);
+const lixianSubmitting = ref(false);
 
 // 计算属性
 const getCurrentFolderName = computed(() => {
@@ -164,6 +244,8 @@ const getTagColor = (type?: string) => {
   const colorMap: Record<string, string> = {
     pan115: "#07c160",
     quark: "#1989fa",
+    magnet: "#ff976a",
+    ed2k: "#7232dd",
   };
   return colorMap[type || ""] || "#ff976a";
 };
@@ -194,7 +276,60 @@ const handleSave = async (resource: ResourceItem) => {
 };
 
 const handleJump = (resource: ResourceItem) => {
-  window.open(resource.cloudLinks[0], "_blank");
+  const link =
+    resource.cloudLinks?.find((l) => !/^magnet:/i.test(l)) ||
+    resource.cloudLinks?.[0] ||
+    resource.magnet?.[0];
+  if (!link) {
+    showToast("没有可跳转的链接");
+    return;
+  }
+  if (/^magnet:/i.test(link)) {
+    window.location.href = link;
+    return;
+  }
+  window.open(link, "_blank");
+};
+
+/** 打开 115 离线下载选目录弹窗 */
+const handleLixian = (resource: ResourceItem) => {
+  const magnet = resourceStore.extractMagnets(resource)[0];
+  if (!magnet) {
+    showToast("没有可下载的磁力链");
+    return;
+  }
+  lixianResource.value = resource;
+  lixianFolderId.value = null;
+  lixianFolderPath.value = null;
+  lixianDialogVisible.value = true;
+};
+
+const handleLixianFolderSelect = (folders: Folder[] | null) => {
+  lixianFolderPath.value = folders;
+  lixianFolderId.value = folders?.[folders.length - 1]?.cid || "0";
+};
+
+/** 提交 115 离线任务 */
+const submitLixian = async (cid?: string) => {
+  if (!lixianResource.value) return;
+  const magnet = resourceStore.extractMagnets(lixianResource.value)[0];
+  if (!magnet) {
+    showToast("没有可下载的磁力链");
+    return;
+  }
+  const targetCid = cid ?? lixianFolderId.value ?? "0";
+  lixianSubmitting.value = true;
+  try {
+    const ok = await add115Lixian(magnet, targetCid);
+    if (ok) {
+      lixianDialogVisible.value = false;
+      lixianResource.value = null;
+      lixianFolderId.value = null;
+      lixianFolderPath.value = null;
+    }
+  } finally {
+    lixianSubmitting.value = false;
+  }
 };
 
 const handleFolderSelect = (folders: Folder[] | null) => {

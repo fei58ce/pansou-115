@@ -51,6 +51,19 @@
             >跳转</el-button
           >
           <el-button
+            v-if="currentResource?.isSupportMagnet"
+            type="warning"
+            plain
+            @click="currentResource && handleCopyMagnet(currentResource)"
+            >复制磁力</el-button
+          >
+          <el-button
+            v-if="currentResource?.isSupportMagnet"
+            type="warning"
+            @click="currentResource && handle115Lixian(currentResource)"
+            >115离线</el-button
+          >
+          <el-button
             v-if="currentResource?.isSupportSave"
             type="primary"
             @click="currentResource && handleSave(currentResource)"
@@ -153,6 +166,19 @@
                 <div class="card-footer">
                   <el-button type="primary" plain @click="handleJump(resource)">跳转</el-button>
                   <el-button
+                    v-if="resource.isSupportMagnet"
+                    type="warning"
+                    plain
+                    @click="handleCopyMagnet(resource)"
+                    >复制磁力</el-button
+                  >
+                  <el-button
+                    v-if="resource.isSupportMagnet"
+                    type="warning"
+                    @click="handle115Lixian(resource)"
+                    >115离线</el-button
+                  >
+                  <el-button
                     v-if="resource.isSupportSave"
                     type="primary"
                     @click="handleSave(resource)"
@@ -181,13 +207,19 @@ import { ref } from "vue";
 import type { ResourceItem, TagColor } from "@/types";
 import { ArrowDown, Plus } from "@element-plus/icons-vue";
 import { getProxyImageUrl } from "@/utils/image";
+import { copyMagnet } from "@/utils/magnet";
 
 const store = useResourceStore();
 
 const showDetail = ref(false);
 const currentResource = ref<ResourceItem | null>(null);
 
-const emit = defineEmits(["save", "loadMore", "jump", "searchMovieforTag"]);
+const emit = defineEmits(["save", "loadMore", "jump", "searchMovieforTag", "lixian"]);
+
+const getMagnet = (resource: ResourceItem) => {
+  const list = store.extractMagnets(resource);
+  return list[0] || "";
+};
 
 const handleSave = (resource: ResourceItem) => {
   if (showDetail.value) {
@@ -198,6 +230,18 @@ const handleSave = (resource: ResourceItem) => {
 
 const handleJump = (resource: ResourceItem) => {
   emit("jump", resource);
+};
+
+const handleCopyMagnet = (resource: ResourceItem) => {
+  copyMagnet(getMagnet(resource));
+};
+
+/** 交给父组件选目录后提交 115 离线 */
+const handle115Lixian = (resource: ResourceItem) => {
+  if (showDetail.value) {
+    showDetail.value = false;
+  }
+  emit("lixian", resource);
 };
 
 const showResourceDetail = (resource: ResourceItem) => {
@@ -447,13 +491,16 @@ const handleLoadMore = (channelId: string) => {
     .card-footer {
       @include flex-center;
       justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-top: 8px;
 
       .el-button {
-        padding: 6px 16px;
-        font-size: 14px;
+        padding: 6px 12px;
+        font-size: 13px;
         height: 32px;
-        min-width: 80px;
+        min-width: 72px;
+        margin: 0;
 
         &:hover {
           transform: translateY(-1px);

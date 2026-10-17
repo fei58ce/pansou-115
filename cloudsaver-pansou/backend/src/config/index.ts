@@ -16,6 +16,15 @@ interface CloudPatterns {
   pan123: RegExp;
   quark: RegExp;
   yidong: RegExp;
+  magnet: RegExp;
+  ed2k: RegExp;
+}
+
+interface TmdbConfig {
+  apiKey: string;
+  baseUrl: string;
+  imageBaseUrl: string;
+  language: string;
 }
 
 interface Config {
@@ -36,6 +45,15 @@ interface Config {
   jwt: {
     secret: string;
     expiresIn: string;
+  };
+  tmdb: TmdbConfig;
+  panSou: {
+    baseUrl: string;
+    /**
+     * 启用的网盘类型列表
+     * Pansou 支持: baidu, aliyun, quark, guangya, tianyi, uc, mobile, 115, pikpak, xunlei, 123, magnet, ed2k
+     */
+    cloudTypes: string[];
   };
 }
 
@@ -110,5 +128,25 @@ export const config: Config = {
     pan123: /https?:\/\/(?:www\.)?123[^\/\s<>"]+\.com\/s\/[^\s<>"]+/g,
     quark: /https?:\/\/pan\.quark\.cn\/[^\s<>"]+/g,
     yidong: /https?:\/\/caiyun\.139\.com\/[^\s<>"]+/g,
+    // 磁力链接
+    magnet: /magnet:\?xt=urn:btih:[a-zA-Z0-9]+(?:&[^\s<>"]*)?/g,
+    // 电驴链接
+    // eslint-disable-next-line no-useless-escape
+    ed2k: /ed2k:\/\/\|[^\s<>"]+\|/g,
+  },
+  tmdb: {
+    apiKey: process.env.TMDB_API_KEY || "",
+    baseUrl: process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3",
+    imageBaseUrl: process.env.TMDB_IMAGE_BASE_URL || "https://image.tmdb.org/t/p",
+    language: process.env.TMDB_LANGUAGE || "zh-CN",
+  },
+  panSou: {
+    baseUrl: process.env.PANSOU_BASE_URL || "http://pansou:8888",
+    cloudTypes: (
+      process.env.PANSOU_CLOUD_TYPES || "baidu,aliyun,quark,115,xunlei,pikpak,123,magnet,ed2k"
+    )
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
   },
 };

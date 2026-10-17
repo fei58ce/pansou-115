@@ -57,7 +57,7 @@ watch(
 );
 
 const searchMovie = (title: string) => {
-  router.push({ path: "/", query: { keyword: title } });
+  router.push({ path: "/resource", query: { keyword: title } });
 };
 </script>
 

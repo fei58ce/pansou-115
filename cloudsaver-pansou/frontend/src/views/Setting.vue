@@ -103,6 +103,8 @@
       <div class="settings-section">
         <div class="settings-group">
           <h3>网盘授权</h3>
+
+          <!-- 115 网盘 -->
           <div class="form-row">
             <div class="form-item full-width">
               <label for="cookie115">115网盘 Cookie</label>
@@ -111,10 +113,16 @@
                 v-model="localUserSettings.cloud115Cookie"
                 type="password"
                 show-password
-                placeholder="请输入115网盘Cookie"
+                placeholder="请输入115网盘Cookie或扫码登录"
               >
                 <template #prefix>
                   <el-icon><Lock /></el-icon>
+                </template>
+                <template #append>
+                  <el-button @click="qrcodeDialog = true">
+                    <el-icon><FullScreen /></el-icon>
+                    <span>扫码登录</span>
+                  </el-button>
                 </template>
               </el-input>
             </div>
@@ -141,6 +149,12 @@
       </div>
     </el-card>
 
+    <!-- 115 扫码登录弹窗 -->
+    <Cloud115QrcodeLogin
+      v-model="qrcodeDialog"
+      @success="onQrcodeSuccess"
+    />
+
     <!-- 保存按钮 -->
     <div class="settings-actions">
       <el-button type="primary" @click="handleSave"> 保存设置 </el-button>
@@ -160,9 +174,12 @@ import {
   Key,
   User,
   Lock,
+  FullScreen,
 } from "@element-plus/icons-vue";
+import Cloud115QrcodeLogin from "@/components/Cloud115QrcodeLogin.vue";
 
 const settingStore = useUserSettingStore();
+const qrcodeDialog = ref(false);
 
 // 本地状态
 const localGlobalSetting = ref<GlobalSettingAttributes>({
@@ -237,6 +254,12 @@ const handleSave = async () => {
   } catch (error) {
     console.error("保存设置失败:", error);
   }
+};
+
+// 扫码登录成功后，重新拉取设置（cookie 已在服务端自动写入）
+const onQrcodeSuccess = async () => {
+  await settingStore.getSettings();
+  ElMessage.success("115 扫码登录成功，cookie 已自动保存");
 };
 </script>
 
