@@ -22,7 +22,7 @@
       <el-table v-else :data="history" stripe>
         <el-table-column prop="name" label="任务" min-width="280" show-overflow-tooltip>
           <template #default="scope">
-            <div class="task-name">{{ scope.row.name || "未命名任务" }}</div>
+            <div class="task-name">{{ displayName(scope.row) }}</div>
             <div class="task-url">{{ scope.row.url }}</div>
           </template>
         </el-table-column>
@@ -80,6 +80,16 @@ const formatTime = (value?: string) => {
   if (!value) return "-";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+};
+
+const displayName = (record: LixianHistoryRecord) => {
+  const raw = (record.name || "").replace(/^已添加[:：]\s*/, "");
+  const cleaned = raw
+    .replace(/magnet:\?[^\s]+/gi, "")
+    .replace(/https?:\/\/[^\s]+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || "未命名任务";
 };
 
 const loadTasks = async () => {

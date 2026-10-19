@@ -12,7 +12,7 @@
     <van-empty v-if="!loading && history.length === 0" description="暂无本站提交记录" />
 
     <van-cell-group v-else inset>
-      <van-cell v-for="record in history" :key="record.id" :title="record.name || '未命名任务'">
+      <van-cell v-for="record in history" :key="record.id" :title="displayName(record)">
         <template #label>
           <div class="record-meta">
             <div>{{ formatTime(record.createdAt) }}</div>
@@ -60,6 +60,16 @@ const formatTime = (value?: string) => {
   if (!value) return "-";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+};
+
+const displayName = (record: LixianHistoryRecord) => {
+  const raw = (record.name || "").replace(/^已添加[:：]\s*/, "");
+  const cleaned = raw
+    .replace(/magnet:\?[^\s]+/gi, "")
+    .replace(/https?:\/\/[^\s]+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || "未命名任务";
 };
 
 const loadTasks = async () => {
