@@ -207,9 +207,22 @@ export class Cloud115QrcodeService {
         return { status: "expired", message: "会话已失效，请重新获取二维码" };
       }
 
-      const resp = await this.qrApi.get<StatusResponse>("/get/status/", {
-        params: { uid, time: session.time, sign: session.sign },
-      });
+      let resp: AxiosResponse<StatusResponse>;
+      try {
+        resp = await this.qrApi.get<StatusResponse>("/get/status/", {
+          params: { uid, time: session.time, sign: session.sign },
+          timeout: 90_000,
+        });
+      } catch (error) {
+        if (
+          axios.isAxiosError(error) &&
+          (error.code === "ECONNABORTED" || /timeout/i.test(error.message))
+        ) {
+          // 115 的状态接口是长轮询：未扫码时会保持连接，超时视为继续等待
+          return { status: "pending", message: "等待扫码..." };
+        }
+        throw error;
+      }
 
       const statusCode = resp.data?.data?.status;
       if (typeof statusCode !== "number") {

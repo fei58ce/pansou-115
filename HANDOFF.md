@@ -253,6 +253,8 @@ app=web&account=<uid>
 - 扫码成功后立即调用 `/files` 校验 Cookie；校验失败不保存，并返回明确错误。
 - `UserSetting` 新增 `cloud115AppType`、`cloud115UserName`、`cloud115ValidatedAt`，设置页“检测授权”显示登录方式、账号和上次验证时间。
 - `cloud115Cookie` / `quarkCookie` 改为 TEXT，避免长 Cookie 被截断。
+- 修复 115 `/get/status/` 长轮询：原 15 秒超时会被误判为错误；现改为 90 秒，超时返回 pending；前端改为顺序轮询，避免请求堆积。
+
 
 ### 已恢复线上授权
 

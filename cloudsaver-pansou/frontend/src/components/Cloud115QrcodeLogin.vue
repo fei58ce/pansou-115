@@ -144,6 +144,7 @@ const errorMessage = ref("");
 const successMessage = ref("");
 
 let pollTimer: number | null = null;
+let polling = false;
 let countdownTimer: number | null = null;
 const countdown = ref(180);
 
@@ -176,16 +177,18 @@ const stopCountdown = () => {
 };
 
 const stopPoll = () => {
+  polling = false;
   if (pollTimer) {
-    clearInterval(pollTimer);
+    clearTimeout(pollTimer);
     pollTimer = null;
   }
 };
 
 const startPoll = () => {
   stopPoll();
-  pollTimer = window.setInterval(async () => {
-    if (!uid.value) return;
+  polling = true;
+  const poll = async () => {
+    if (!polling || !uid.value) return;
     try {
       const result = await cloud115QrcodeApi.check(uid.value);
       status.value = result.status;
@@ -204,11 +207,16 @@ const startPoll = () => {
             : result.message || "登录成功，Cookie 已保存";
           ElMessage.success(successMessage.value);
         }
+        return;
       }
     } catch (e) {
       // 静默忽略一次错误，下次轮询再试
     }
-  }, 2000);
+    if (polling && uid.value) {
+      pollTimer = window.setTimeout(poll, 2000);
+    }
+  };
+  pollTimer = window.setTimeout(poll, 0);
 };
 
 const initQrcode = async () => {
