@@ -186,7 +186,9 @@ Emby + 神医助手：扫描 NAS、媒体识别、元数据刮削
 
 - [ ] **转存成功确认**：记录分享、目标目录、转存结果
 - [x] **OneStrm 联动方式配置**：已配置 FRP 地址、随机 Webhook Token、扫描路径 `/emby`，并开启第三方 Webhook 与本站自动触发
+- [x] **OneStrm STRM 生成状态展示**：离线任务页显示最近 STRM 记录和匹配结果
 - [ ] **转存后提示 OneStrm 待处理状态**
+- [x] **离线任务与 OneStrm STRM 生成状态关联**（标题启发式匹配）
 - [ ] **转存记录与 OneStrm 生成状态关联**
 - [ ] **重复转存检测**：同链接、同标题、同目录提示已存在
 
@@ -287,3 +289,19 @@ app=web&account=<uid>
 - OneStrm 日志：11:10:19 收到 Webhook；11:11:40 创建 3 个 STRM 文件，包含 `Dune Part Two 2024 ... .strm`。
 - 测试目录已从 115 删除，并再次触发 OneStrm 清理扫描。
 - 注意：OneStrm 日志中的 STRM 输出路径为 `/emby/emby/_pansou_test/...`，需确认 OneStrm 挂载映射与 Emby 媒体库路径是否一致。
+
+
+---
+
+## 11. OneStrm STRM 状态联动（2026-10-19）
+
+- 设置页新增 **OneStrm 管理账号 / 管理密码**，用于登录 OneStrm 管理后台读取日志（不是 Webhook Token）。
+- 新增后端接口 `GET /api/onestrm/status`：
+  - 自动登录 OneStrm，缓存 session Cookie；
+  - 调用 `/get_log_updates?log_type=strm` 读取 STRM 日志；
+  - 解析最近 `创建Strm 文件成功`、`完成生成Strm 文件`、`最终执行路径` 等日志。
+- 115 离线任务页（PC / 移动端）新增：
+  - OneStrm 连接状态、最近扫描、最近任务结果；
+  - 最近 30 条 STRM 生成记录；
+  - 每条本站离线记录显示 **STRM 已生成 / 待生成**，并按标题做启发式匹配。
+- 注意：STRM 与离线任务目前是**按标题关键词匹配**，不是 115 taskId 精确关联；如果标题差异较大，可能显示“待生成”，但可以在“最近 STRM 生成记录”里直接确认。

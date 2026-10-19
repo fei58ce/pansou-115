@@ -121,6 +121,26 @@
               </div>
             </div>
             <div class="form-row">
+              <div class="form-item">
+                <label for="oneStrmUsername">OneStrm 管理账号</label>
+                <el-input
+                  id="oneStrmUsername"
+                  v-model="localGlobalSetting.oneStrmUsername"
+                  placeholder="用于读取 STRM 生成状态"
+                />
+              </div>
+              <div class="form-item">
+                <label for="oneStrmPassword">OneStrm 管理密码</label>
+                <el-input
+                  id="oneStrmPassword"
+                  v-model="localGlobalSetting.oneStrmPassword"
+                  type="password"
+                  show-password
+                  placeholder="用于读取 STRM 生成状态"
+                />
+              </div>
+            </div>
+            <div class="form-row">
               <el-switch
                 v-model="localGlobalSetting.oneStrmAutoTrigger"
                 active-text="转存后允许触发 OneStrm 扫描"

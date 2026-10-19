@@ -11,6 +11,7 @@ import { SettingController } from "../controllers/setting";
 import { UserController } from "../controllers/user";
 import { SponsorsController } from "../controllers/sponsors";
 import { Cloud115QrcodeController } from "../controllers/cloud115Qrcode";
+import { OneStrmController } from "../controllers/onestrm";
 
 const router = Router();
 
@@ -27,6 +28,7 @@ const sponsorsController = container.get<SponsorsController>(TYPES.SponsorsContr
 const cloud115QrcodeController = container.get<Cloud115QrcodeController>(
   TYPES.Cloud115QrcodeController
 );
+const oneStrmController = container.get<OneStrmController>(TYPES.OneStrmController);
 
 // 用户相关路由
 router.post("/user/login", (req, res) => userController.login(req, res));
@@ -67,6 +69,9 @@ router.get("/cloud115/lixian/history", (req, res) =>
 router.post("/cloud115/lixian/retry", (req, res) =>
   cloud115QrcodeController.retryLixianTask(req, res)
 );
+
+// OneStrm 状态
+router.get("/onestrm/status", (req, res) => oneStrmController.getStatus(req, res));
 
 // 夸克网盘相关
 router.get("/quark/share-info", (req, res) => quarkController.getShareInfo(req, res));

@@ -7,6 +7,8 @@
   tmdbApiKey?: string;
   oneStrmBaseUrl?: string;
   oneStrmWebhookToken?: string;
+  oneStrmUsername?: string;
+  oneStrmPassword?: string;
   oneStrmScanPath?: string;
   oneStrmAutoTrigger?: boolean;
 }

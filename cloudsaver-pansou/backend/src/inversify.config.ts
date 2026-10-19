@@ -27,6 +27,7 @@ import { ImageController } from "./controllers/teleImages";
 import { SettingController } from "./controllers/setting";
 import { UserController } from "./controllers/user";
 import { SponsorsController } from "./controllers/sponsors";
+import { OneStrmController } from "./controllers/onestrm";
 const container = new Container();
 
 // Services
@@ -63,5 +64,6 @@ container.bind<ImageController>(TYPES.ImageController).to(ImageController);
 container.bind<SettingController>(TYPES.SettingController).to(SettingController);
 container.bind<UserController>(TYPES.UserController).to(UserController);
 container.bind<SponsorsController>(TYPES.SponsorsController).to(SponsorsController);
+container.bind<OneStrmController>(TYPES.OneStrmController).to(OneStrmController);
 
 export { container };

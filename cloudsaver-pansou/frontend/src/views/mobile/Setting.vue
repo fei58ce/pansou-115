@@ -62,6 +62,17 @@
             label="扫描路径"
             placeholder="/emby"
           />
+          <van-field
+            v-model="localGlobalSetting.oneStrmUsername"
+            label="管理账号"
+            placeholder="OneStrm 登录账号"
+          />
+          <van-field
+            v-model="localGlobalSetting.oneStrmPassword"
+            type="password"
+            label="管理密码"
+            placeholder="OneStrm 登录密码"
+          />
           <van-cell center title="转存后允许触发 OneStrm">
             <template #right-icon
               ><van-switch v-model="localGlobalSetting.oneStrmAutoTrigger" size="24px"

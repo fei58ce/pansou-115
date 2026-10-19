@@ -15,6 +15,8 @@ const DEFAULT_GLOBAL_SETTINGS = {
   tmdbApiKey: "",
   oneStrmBaseUrl: "",
   oneStrmWebhookToken: "",
+  oneStrmUsername: "",
+  oneStrmPassword: "",
   oneStrmScanPath: "/emby",
   oneStrmAutoTrigger: false,
 };

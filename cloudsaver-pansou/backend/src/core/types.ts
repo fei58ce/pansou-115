@@ -24,4 +24,5 @@ export const TYPES = {
   SettingController: Symbol.for("SettingController"),
   UserController: Symbol.for("UserController"),
   SponsorsController: Symbol.for("SponsorsController"),
+  OneStrmController: Symbol.for("OneStrmController"),
 };

@@ -1,4 +1,4 @@
-﻿import { DataTypes, Model, Optional } from "sequelize";
+import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 
 export interface GlobalSettingAttributes {
@@ -11,6 +11,8 @@ export interface GlobalSettingAttributes {
   tmdbApiKey: string;
   oneStrmBaseUrl: string;
   oneStrmWebhookToken: string;
+  oneStrmUsername: string;
+  oneStrmPassword: string;
   oneStrmScanPath: string;
   oneStrmAutoTrigger: boolean;
 }
@@ -30,6 +32,8 @@ class GlobalSetting
   public tmdbApiKey!: string;
   public oneStrmBaseUrl!: string;
   public oneStrmWebhookToken!: string;
+  public oneStrmUsername!: string;
+  public oneStrmPassword!: string;
   public oneStrmScanPath!: string;
   public oneStrmAutoTrigger!: boolean;
 }
@@ -77,6 +81,16 @@ GlobalSetting.init(
       defaultValue: "",
     },
     oneStrmWebhookToken: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "",
+    },
+    oneStrmUsername: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "",
+    },
+    oneStrmPassword: {
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: "",
