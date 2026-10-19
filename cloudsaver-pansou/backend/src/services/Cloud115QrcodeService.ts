@@ -106,8 +106,8 @@ interface StatusResponse {
   state: number;
   code?: number;
   message?: string;
-  data: {
-    status: number;
+  data?: {
+    status?: number | string;
     msg?: string;
   };
 }
@@ -224,8 +224,19 @@ export class Cloud115QrcodeService {
         throw error;
       }
 
-      const statusCode = resp.data?.data?.status;
-      if (typeof statusCode !== "number") {
+      const rawStatus = resp.data?.data?.status;
+      if (rawStatus === undefined || rawStatus === null || rawStatus === "") {
+        if (resp.data?.state === 1) {
+          // 长轮询在等待期间会返回 {"state":1,"data":{}}
+          return { status: "pending", message: "等待扫码..." };
+        }
+        return {
+          status: "error",
+          message: resp.data?.message || "115 状态查询失败",
+        };
+      }
+      const statusCode = Number(rawStatus);
+      if (!Number.isFinite(statusCode)) {
         return {
           status: "error",
           message: resp.data?.message || "115 状态查询失败",
