@@ -200,11 +200,16 @@ export class Cloud115QrcodeController extends BaseController {
         throw new Error("无法确定离线文件原名，请稍后在 115 中手动改名");
       }
 
-      const item = await this.cloud115Service.findItemByName(
-        cookie,
-        record.cid || "0",
-        originalName
-      );
+      let item = await this.cloud115Service.findItemByName(cookie, record.cid || "0", originalName);
+
+      // 保存到根目录时，115 可能把离线文件放到默认的「云下载」目录
+      if (!item && (!record.cid || record.cid === "0")) {
+        const downloadDir = await this.cloud115Service.findItemByName(cookie, "0", "云下载");
+        if (downloadDir?.isFolder) {
+          item = await this.cloud115Service.findItemByName(cookie, downloadDir.id, originalName);
+        }
+      }
+
       if (!item) {
         throw new Error("未找到下载完成的文件/文件夹，请确认任务已完成且保存在所选目录");
       }
