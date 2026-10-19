@@ -7,6 +7,9 @@ interface UserSettingAttributes {
   userId: string;
   cloud115UserId?: string;
   cloud115Cookie: string;
+  cloud115AppType?: string;
+  cloud115UserName?: string;
+  cloud115ValidatedAt?: Date;
   quarkCookie: string;
 }
 
@@ -20,6 +23,9 @@ class UserSetting
   public userId!: string;
   public cloud115UserId?: string;
   public cloud115Cookie!: string;
+  public cloud115AppType?: string;
+  public cloud115UserName?: string;
+  public cloud115ValidatedAt?: Date;
   public quarkCookie!: string;
 }
 
@@ -45,11 +51,23 @@ UserSetting.init(
       allowNull: true,
     },
     cloud115Cookie: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    cloud115AppType: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    quarkCookie: {
+    cloud115UserName: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    cloud115ValidatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    quarkCookie: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

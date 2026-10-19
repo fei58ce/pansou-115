@@ -221,3 +221,53 @@ Emby + 神医助手：扫描 NAS、媒体识别、元数据刮削
 - [x] 4. 离线任务列表、提交历史与失败重试
 - [x] 5. 115 Cookie 过期检测
 - [x] 6. 图片代理域名白名单与 SSRF 拦截
+
+---
+
+## 10. 115 授权短期失效修复（2026-10-19）
+
+### 根因
+
+本站原扫码流程在换取 Cookie 时固定使用：
+
+```text
+POST https://passportapi.115.com/app/1.0/web/1.0/login/qrcode/
+app=web&account=<uid>
+```
+
+得到的 UID 形如 `..._A1_...`（ssoent=A1，网页端）。网页端授权生命周期较短，因此很快出现：
+
+```text
+获取115pan目录列表失败:登录超时，请重新登录。
+```
+
+### 修复内容
+
+- 默认改为 **115_苹果端（115ios，ssoent=D3）** 换取 Cookie，与 OneStrm 当前授权一致，UID 形如 `..._D3_...`。
+- 扫码弹窗新增登录方式选择：115_苹果端 / 115_安卓端 / 115_苹果平板端 / 115生活_苹果端 / 115生活_安卓端 / 微信小程序 / 支付宝小程序。
+- 换取 Cookie 改为 115 官方设备端点：
+  ```text
+  POST https://qrcodeapi.115.com/app/1.0/{app}/1.0/login/qrcode/
+  account=<uid>
+  ```
+- 扫码成功后立即调用 `/files` 校验 Cookie；校验失败不保存，并返回明确错误。
+- `UserSetting` 新增 `cloud115AppType`、`cloud115UserName`、`cloud115ValidatedAt`，设置页“检测授权”显示登录方式、账号和上次验证时间。
+- `cloud115Cookie` / `quarkCookie` 改为 TEXT，避免长 Cookie 被截断。
+
+### 已恢复线上授权
+
+已从 OneStrm 读取当前有效的 115 授权并写入本站用户 `mufeng`。线上验证：
+
+- `/api/cloud115/auth/status` 返回 `valid: true`
+- 根目录可读取
+- `/emby` 目录可读取（动画电影、动漫、国产动画、国产剧、华语电影、欧美剧、日番、日韩电影、日韩剧、少儿、外语电影、综艺等）
+
+### 验收
+
+- [x] 后端 `npm run build:backend`
+- [x] 前端 `npm run build:frontend`
+- [x] `npm run lint`（0 errors）
+- [x] 线上 115 授权恢复有效
+- [x] 根目录 / `/emby` 目录可读取
+- [ ] 线上重新扫码（115_苹果端）验收
+- [ ] 搜索 → 转存 → OneStrm Webhook → STRM → Emby 全链路验收

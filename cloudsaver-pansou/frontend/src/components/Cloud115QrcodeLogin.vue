@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     title="115 网盘扫码登录"
-    width="380px"
+    width="400px"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     align-center
@@ -10,6 +10,28 @@
     @close="handleClose"
   >
     <div class="qrcode-login">
+      <!-- 登录方式 -->
+      <div class="qrcode-app-type">
+        <span class="app-type-label">登录方式</span>
+        <el-select
+          v-model="appType"
+          size="small"
+          :disabled="loading || status === 'scanned'"
+          @change="handleAppTypeChange"
+        >
+          <el-option
+            v-for="opt in appOptions"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          >
+            <span>{{ opt.label }}</span>
+            <span class="option-desc">{{ opt.description }}</span>
+          </el-option>
+        </el-select>
+      </div>
+      <p class="qrcode-app-hint">推荐「115_苹果端」，授权有效期更长；请使用 115 App 扫码。</p>
+
       <div v-if="loading && !qrcodeImage" class="qrcode-loading">
         <el-icon class="is-loading"><Loading /></el-icon>
         <span>正在生成二维码...</span>
@@ -33,11 +55,8 @@
         <!-- 状态文案 -->
         <div class="qrcode-status">
           <p v-if="status === 'pending'">
-            请使用
-            <el-link type="primary" href="https://115.com/" target="_blank" :underline="false">
-              115 App
-            </el-link>
-            扫描二维码登录
+            请使用 115 App 扫描二维码登录
+            <span class="app-label">（{{ selectedAppLabel }}）</span>
           </p>
           <p v-else-if="status === 'scanned'" class="status-info">
             <el-icon><InfoFilled /></el-icon>
@@ -45,7 +64,7 @@
           </p>
           <p v-else-if="status === 'confirmed'" class="status-success">
             <el-icon><CircleCheckFilled /></el-icon>
-            登录成功，cookie 已保存
+            {{ successMessage || "登录成功，Cookie 已保存" }}
           </p>
           <p v-else-if="status === 'expired'" class="status-error">
             <el-icon><WarningFilled /></el-icon>
@@ -85,15 +104,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import { ElMessage } from "element-plus";
+import { Loading, InfoFilled, WarningFilled, CircleCheckFilled } from "@element-plus/icons-vue";
 import {
-  Loading,
-  InfoFilled,
-  WarningFilled,
-  CircleCheckFilled,
-} from "@element-plus/icons-vue";
-import { cloud115QrcodeApi, QrcodeStatus } from "@/api/cloud115Qrcode";
+  cloud115QrcodeApi,
+  QrcodeStatus,
+  Cloud115AppType,
+  CLOUD115_APP_OPTIONS,
+} from "@/api/cloud115Qrcode";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -105,23 +124,33 @@ const emit = defineEmits<{
 }>();
 
 const visible = ref(props.modelValue);
-watch(() => props.modelValue, (v) => (visible.value = v));
+watch(
+  () => props.modelValue,
+  (v) => (visible.value = v)
+);
 watch(visible, (v) => emit("update:modelValue", v));
+
+const appOptions = CLOUD115_APP_OPTIONS;
+const appType = ref<Cloud115AppType>("115ios");
+const selectedAppLabel = computed(
+  () => appOptions.find((item) => item.value === appType.value)?.label || "115_苹果端"
+);
 
 const loading = ref(false);
 const qrcodeImage = ref("");
 const uid = ref("");
 const status = ref<QrcodeStatus>("pending");
 const errorMessage = ref("");
+const successMessage = ref("");
 
 let pollTimer: number | null = null;
 let countdownTimer: number | null = null;
-let countdown = ref(180);
+const countdown = ref(180);
 
 const formatCountdown = (s: number) => {
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  return m + ":" + sec.toString().padStart(2, "0");
 };
 
 const startCountdown = () => {
@@ -170,7 +199,10 @@ const startPoll = () => {
         stopPoll();
         if (result.status === "confirmed") {
           stopCountdown();
-          ElMessage.success("115 网盘登录成功");
+          successMessage.value = result.userName
+            ? (result.message || "登录成功") + "，账号：" + result.userName
+            : result.message || "登录成功，Cookie 已保存";
+          ElMessage.success(successMessage.value);
         }
       }
     } catch (e) {
@@ -182,11 +214,13 @@ const startPoll = () => {
 const initQrcode = async () => {
   loading.value = true;
   errorMessage.value = "";
+  successMessage.value = "";
   status.value = "pending";
   try {
-    const data = await cloud115QrcodeApi.init();
+    const data = await cloud115QrcodeApi.init(appType.value);
     uid.value = data.uid;
     qrcodeImage.value = data.qrcodeImage;
+    if (data.appType) appType.value = data.appType;
     startPoll();
     startCountdown();
   } catch (e) {
@@ -196,6 +230,10 @@ const initQrcode = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleAppTypeChange = () => {
+  if (visible.value) initQrcode();
 };
 
 const handleSuccess = () => {
@@ -210,6 +248,7 @@ const handleClose = () => {
   qrcodeImage.value = "";
   status.value = "pending";
   errorMessage.value = "";
+  successMessage.value = "";
   countdown.value = 180;
 };
 
@@ -236,6 +275,39 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 8px 0;
+}
+
+.qrcode-app-type {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .app-type-label {
+    flex: 0 0 auto;
+    font-size: 13px;
+    color: var(--theme-text-regular);
+  }
+
+  :deep(.el-select) {
+    flex: 1;
+  }
+}
+
+.option-desc {
+  float: right;
+  margin-left: 12px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.qrcode-app-hint {
+  width: 100%;
+  margin: 6px 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #909399;
+  text-align: center;
 }
 
 .qrcode-loading {
@@ -296,6 +368,9 @@ onUnmounted(() => {
   }
   .status-error {
     color: #f56c6c;
+  }
+  .app-label {
+    color: var(--theme-primary);
   }
 }
 

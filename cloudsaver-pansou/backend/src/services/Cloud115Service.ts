@@ -52,6 +52,19 @@ export class Cloud115Service implements ICloudStorageService {
     };
   }
 
+  /** 通过读取根目录验证 Cookie 是否仍然有效 */
+  async validateCookie(cookie: string): Promise<{ valid: boolean; message: string }> {
+    try {
+      await this.getFolderList(cookie, "0");
+      return { valid: true, message: "115 授权有效" };
+    } catch (error) {
+      return {
+        valid: false,
+        message: error instanceof Error ? error.message : "115 授权已失效",
+      };
+    }
+  }
+
   async getShareInfo(
     shareCode: string,
     cookie: string,

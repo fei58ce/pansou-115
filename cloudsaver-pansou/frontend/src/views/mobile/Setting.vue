@@ -46,11 +46,26 @@
       <div class="setting__title">OneStrm 联动</div>
       <div class="setting__card">
         <van-cell-group inset>
-          <van-field v-model="localGlobalSetting.oneStrmBaseUrl" label="OneStrm地址" placeholder="http://8.133.190.156:58003" />
-          <van-field v-model="localGlobalSetting.oneStrmWebhookToken" type="password" label="Webhook Token" placeholder="Webhook_token" />
-          <van-field v-model="localGlobalSetting.oneStrmScanPath" label="扫描路径" placeholder="/emby" />
+          <van-field
+            v-model="localGlobalSetting.oneStrmBaseUrl"
+            label="OneStrm地址"
+            placeholder="http://8.133.190.156:58003"
+          />
+          <van-field
+            v-model="localGlobalSetting.oneStrmWebhookToken"
+            type="password"
+            label="Webhook Token"
+            placeholder="Webhook_token"
+          />
+          <van-field
+            v-model="localGlobalSetting.oneStrmScanPath"
+            label="扫描路径"
+            placeholder="/emby"
+          />
           <van-cell center title="转存后允许触发 OneStrm">
-            <template #right-icon><van-switch v-model="localGlobalSetting.oneStrmAutoTrigger" size="24px" /></template>
+            <template #right-icon
+              ><van-switch v-model="localGlobalSetting.oneStrmAutoTrigger" size="24px"
+            /></template>
           </van-cell>
         </van-cell-group>
       </div>
@@ -82,11 +97,11 @@
             placeholder="TMDB API 密钥，保存后生效"
           />
           <van-cell title="115扫码登录" is-link @click="qrcodeDialog = true">
-          <van-cell title="检测115授权" is-link @click="check115Auth" />
             <template #icon>
               <van-icon name="qr" style="margin-right: 8px" />
             </template>
           </van-cell>
+          <van-cell title="检测115授权" is-link @click="check115Auth" />
 
           <van-field
             v-model="localUserSettings.quarkCookie"
@@ -211,9 +226,25 @@ const handleProxyHostChange = (val: string) => {
 const check115Auth = async () => {
   try {
     const result = await cloud115QrcodeApi.checkAuth();
-    showNotify({ type: result.valid ? "success" : "warning", message: result.message });
+    const extra: string[] = [];
+    if (result.appType) extra.push("方式：" + result.appType);
+    if (result.userName) extra.push("账号：" + result.userName);
+    if (result.validatedAt) {
+      const validatedAt = new Date(result.validatedAt);
+      if (!Number.isNaN(validatedAt.getTime())) {
+        extra.push("验证：" + validatedAt.toLocaleString());
+      }
+    }
+    const suffix = extra.length ? "（" + extra.join("，") + "）" : "";
+    showNotify({
+      type: result.valid ? "success" : "warning",
+      message: (result.message || (result.valid ? "115 授权有效" : "115 授权已失效")) + suffix,
+    });
   } catch (error) {
-    showNotify({ type: "danger", message: error instanceof Error ? error.message : "检测 115 授权失败" });
+    showNotify({
+      type: "danger",
+      message: error instanceof Error ? error.message : "检测 115 授权失败",
+    });
   }
 };
 

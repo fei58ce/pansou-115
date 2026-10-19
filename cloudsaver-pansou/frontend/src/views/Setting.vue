@@ -93,21 +93,38 @@
             <div class="form-row">
               <div class="form-item full-width">
                 <label for="oneStrmBaseUrl">OneStrm 地址</label>
-                <el-input id="oneStrmBaseUrl" v-model="localGlobalSetting.oneStrmBaseUrl" placeholder="例如 http://8.133.190.156:58003" />
+                <el-input
+                  id="oneStrmBaseUrl"
+                  v-model="localGlobalSetting.oneStrmBaseUrl"
+                  placeholder="例如 http://8.133.190.156:58003"
+                />
               </div>
             </div>
             <div class="form-row">
               <div class="form-item">
                 <label for="oneStrmWebhookToken">Webhook Token</label>
-                <el-input id="oneStrmWebhookToken" v-model="localGlobalSetting.oneStrmWebhookToken" type="password" show-password placeholder="OneStrm 用户中心中的 Webhook_token" />
+                <el-input
+                  id="oneStrmWebhookToken"
+                  v-model="localGlobalSetting.oneStrmWebhookToken"
+                  type="password"
+                  show-password
+                  placeholder="OneStrm 用户中心中的 Webhook_token"
+                />
               </div>
               <div class="form-item">
                 <label for="oneStrmScanPath">扫描路径</label>
-                <el-input id="oneStrmScanPath" v-model="localGlobalSetting.oneStrmScanPath" placeholder="/emby" />
+                <el-input
+                  id="oneStrmScanPath"
+                  v-model="localGlobalSetting.oneStrmScanPath"
+                  placeholder="/emby"
+                />
               </div>
             </div>
             <div class="form-row">
-              <el-switch v-model="localGlobalSetting.oneStrmAutoTrigger" active-text="转存后允许触发 OneStrm 扫描" />
+              <el-switch
+                v-model="localGlobalSetting.oneStrmAutoTrigger"
+                active-text="转存后允许触发 OneStrm 扫描"
+              />
             </div>
           </div>
 
@@ -190,15 +207,11 @@
             </div>
           </div>
         </div>
-
       </div>
     </el-card>
 
     <!-- 115 扫码登录弹窗 -->
-    <Cloud115QrcodeLogin
-      v-model="qrcodeDialog"
-      @success="onQrcodeSuccess"
-    />
+    <Cloud115QrcodeLogin v-model="qrcodeDialog" @success="onQrcodeSuccess" />
 
     <!-- 保存按钮 -->
     <div class="settings-actions">
@@ -312,8 +325,18 @@ const handleSave = async () => {
 const check115Auth = async () => {
   try {
     const result = await cloud115QrcodeApi.checkAuth();
-    if (result.valid) ElMessage.success(result.message || "115 授权有效");
-    else ElMessage.warning(result.message || "115 授权已失效，请重新扫码");
+    const extra: string[] = [];
+    if (result.appType) extra.push("登录方式：" + result.appType);
+    if (result.userName) extra.push("账号：" + result.userName);
+    if (result.validatedAt) {
+      const validatedAt = new Date(result.validatedAt);
+      if (!Number.isNaN(validatedAt.getTime())) {
+        extra.push("上次验证：" + validatedAt.toLocaleString());
+      }
+    }
+    const suffix = extra.length ? "（" + extra.join("，") + "）" : "";
+    if (result.valid) ElMessage.success((result.message || "115 授权有效") + suffix);
+    else ElMessage.warning((result.message || "115 授权已失效，请重新扫码") + suffix);
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "检测 115 授权失败");
   }

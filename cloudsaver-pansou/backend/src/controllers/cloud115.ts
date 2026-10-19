@@ -5,11 +5,12 @@ import { Cloud115Service } from "../services/Cloud115Service";
 import { OneStrmService } from "../services/OneStrmService";
 import { BaseCloudController } from "./BaseCloudController";
 import { getCookieFromRequest } from "../utils/cookieHelper";
+import UserSetting from "../models/UserSetting";
 
 @injectable()
 export class Cloud115Controller extends BaseCloudController {
   constructor(
-    @inject(TYPES.Cloud115Service) cloud115Service: Cloud115Service,
+    @inject(TYPES.Cloud115Service) private cloud115Service: Cloud115Service,
     @inject(TYPES.OneStrmService) private oneStrmService: OneStrmService
   ) {
     super(cloud115Service);
@@ -22,17 +23,17 @@ export class Cloud115Controller extends BaseCloudController {
   async checkAuth(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const cookie = await getCookieFromRequest(req, this.getCookieType());
-      try {
-        await this.cloudService.getFolderList(cookie, "0");
-        return { data: { valid: true, message: "115 授权有效" } };
-      } catch (error) {
-        return {
-          data: {
-            valid: false,
-            message: error instanceof Error ? error.message : "115 授权已失效",
-          },
-        };
-      }
+      const userId = (req as any).user?.userId;
+      const validation = await this.cloud115Service.validateCookie(cookie);
+      const setting = userId ? await UserSetting.findOne({ where: { userId } }) : null;
+      return {
+        data: {
+          ...validation,
+          appType: setting?.cloud115AppType || "",
+          userName: setting?.cloud115UserName || "",
+          validatedAt: setting?.cloud115ValidatedAt || null,
+        },
+      };
     });
   }
 

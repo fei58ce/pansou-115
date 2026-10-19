@@ -31,7 +31,7 @@ export class Cloud115QrcodeController extends BaseController {
    */
   async init(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
-      const data = await this.qrcodeService.init();
+      const data = await this.qrcodeService.init(req.body?.appType);
       return { data };
     });
   }
@@ -47,21 +47,9 @@ export class Cloud115QrcodeController extends BaseController {
       if (!uid) {
         return { data: { status: "error" as const, message: "缺少 uid" } };
       }
-      const result = await this.qrcodeService.check(uid as string);
-
-      // 确认成功后自动保存 cookie 到用户设置
-      if (result.status === "confirmed" && result.cookie) {
-        try {
-          const userId = (req as any).user?.userId;
-          if (userId) {
-            await this.qrcodeService.saveCookieForUser(userId, result.cookie);
-          }
-        } catch (error) {
-          logger.error("保存 115 cookie 失败:", error);
-        }
-      }
-
-      return { data: result as { status: string; message?: string; cookie?: string } };
+      const userId = (req as any).user?.userId;
+      const result = await this.qrcodeService.check(uid as string, userId);
+      return { data: result };
     });
   }
 
