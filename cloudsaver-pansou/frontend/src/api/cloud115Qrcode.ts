@@ -61,6 +61,20 @@ export interface LixianTask {
   taskId?: string;
 }
 
+export interface LixianHistoryRecord {
+  id: string;
+  url: string;
+  cid: string;
+  taskId: string;
+  name: string;
+  status: number;
+  statusText: string;
+  percent: number;
+  lastError: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 function assertOk<T>(res: { code: number; data?: T; message?: string }, fallback: string): T {
   if (res.code !== 0 || res.data === undefined || res.data === null) {
     throw new Error(res.message || fallback);
@@ -99,7 +113,7 @@ export const cloud115QrcodeApi = {
   },
 
   async getLixianHistory() {
-    const res = await request.get("/api/cloud115/lixian/history");
+    const res = await request.get<LixianHistoryRecord[]>("/api/cloud115/lixian/history");
     return assertOk(res, "获取离线历史失败");
   },
 
