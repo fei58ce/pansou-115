@@ -273,5 +273,16 @@ app=web&account=<uid>
 - [x] `npm run lint`（0 errors）
 - [x] 线上 115 授权恢复有效
 - [x] 根目录 / `/emby` 目录可读取
-- [ ] 线上重新扫码（115_苹果端）验收
-- [ ] 搜索 → 转存 → OneStrm Webhook → STRM → Emby 全链路验收
+- [x] 扫码弹窗（115_苹果端）与长轮询验收（未实际手机扫码）
+- [x] 搜索 → 转存 → OneStrm Webhook → STRM 全链路验收
+- [ ] Emby 实际识别 / 播放验收
+- [ ] 真实手机扫码完成 115_苹果端授权验收
+
+### 端到端实测（2026-10-19）
+
+- 搜索“沙丘2” → PanSou 115 返回 `anxia.com` 分享。
+- 通过本站转存到 `/emby/_pansou_test`，115 API 确认目录存在。
+- `/api/cloud115/save` 返回 `oneStrm.triggered=true`。
+- OneStrm 日志：11:10:19 收到 Webhook；11:11:40 创建 3 个 STRM 文件，包含 `Dune Part Two 2024 ... .strm`。
+- 测试目录已从 115 删除，并再次触发 OneStrm 清理扫描。
+- 注意：OneStrm 日志中的 STRM 输出路径为 `/emby/emby/_pansou_test/...`，需确认 OneStrm 挂载映射与 Emby 媒体库路径是否一致。
