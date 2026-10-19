@@ -3,6 +3,7 @@ import { injectable, inject } from "inversify";
 import { TYPES } from "../core/types";
 import { Cloud115QrcodeService } from "../services/Cloud115QrcodeService";
 import { Cloud115LixianService } from "../services/Cloud115LixianService";
+import { Cloud115Service } from "../services/Cloud115Service";
 import { BaseController } from "./BaseController";
 import { getCookieFromRequest } from "../utils/cookieHelper";
 import { logger } from "../utils/logger";
@@ -20,7 +21,9 @@ export class Cloud115QrcodeController extends BaseController {
     @inject(TYPES.Cloud115QrcodeService)
     private qrcodeService: Cloud115QrcodeService,
     @inject(TYPES.Cloud115LixianService)
-    private lixianService: Cloud115LixianService
+    private lixianService: Cloud115LixianService,
+    @inject(TYPES.Cloud115Service)
+    private cloud115Service: Cloud115Service
   ) {
     super();
   }
@@ -83,7 +86,7 @@ export class Cloud115QrcodeController extends BaseController {
   async addLixianTask(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const cookie = await getCookieFromRequest(req, "cloud115");
-      const { url, cid } = req.body || {};
+      const { url, cid, newName } = req.body || {};
       if (!url) {
         throw new Error("缺少 url");
       }
@@ -93,6 +96,7 @@ export class Cloud115QrcodeController extends BaseController {
         userId,
         url: String(url),
         cid: cid || "0",
+        renameTo: String(newName || "").trim(),
       });
       try {
         const data = await this.lixianService.addTask(cookie, { url, cid });
@@ -144,6 +148,7 @@ export class Cloud115QrcodeController extends BaseController {
           status: 0,
           statusText: "已重试",
           lastError: "",
+          renameApplied: false,
         });
         return { data: { ...data, recordId: record.id }, message: data.message };
       } catch (error) {
@@ -154,6 +159,72 @@ export class Cloud115QrcodeController extends BaseController {
         });
         throw error;
       }
+    });
+  }
+
+  /** 对已完成的离线任务执行改名 */
+  async renameLixianTask(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const userId = (req as any).user?.userId;
+      const recordId = String(req.body?.recordId || "");
+      const newName = String(req.body?.newName || "").trim();
+      if (!userId || !recordId) throw new Error("缺少任务记录");
+
+      const record = await LixianTaskRecord.findOne({
+        where: { id: recordId, userId },
+      });
+      if (!record) throw new Error("任务记录不存在");
+
+      const targetName = newName || record.renameTo;
+      if (!targetName) throw new Error("请填写新的文件名");
+
+      const cookie = await getCookieFromRequest(req, "cloud115");
+      const tasks = await this.lixianService.listTasks(cookie);
+      const task =
+        tasks.find((item) => item.taskId && item.taskId === record.taskId) ||
+        tasks.find((item) => item.name && record.name.includes(item.name));
+
+      if (task && task.status !== 2) {
+        throw new Error("任务尚未完成，当前状态：" + task.statusText);
+      }
+
+      const originalName =
+        task?.name ||
+        record.name
+          .replace(/^已添加[:：]\s*/, "")
+          .replace(/magnet:\?[^\s]+/gi, "")
+          .replace(/https?:\/\/[^\s]+/gi, "")
+          .trim();
+
+      if (!originalName) {
+        throw new Error("无法确定离线文件原名，请稍后在 115 中手动改名");
+      }
+
+      const item = await this.cloud115Service.findItemByName(
+        cookie,
+        record.cid || "0",
+        originalName
+      );
+      if (!item) {
+        throw new Error("未找到下载完成的文件/文件夹，请确认任务已完成且保存在所选目录");
+      }
+
+      await this.cloud115Service.renameItem(cookie, item.id, targetName);
+      await record.update({
+        name: targetName,
+        renameTo: targetName,
+        renameApplied: true,
+        lastError: "",
+      });
+
+      return {
+        data: {
+          renamed: true,
+          newName: targetName,
+          isFolder: item.isFolder,
+        },
+        message: "重命名成功",
+      };
     });
   }
 

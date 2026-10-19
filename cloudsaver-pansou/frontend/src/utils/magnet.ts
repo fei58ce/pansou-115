@@ -57,14 +57,15 @@ export async function copyMagnet(magnet: string | string[]): Promise<boolean> {
  * 调用 115 离线下载接口添加磁力任务
  * @param magnet 磁力链
  * @param cid 目标目录，默认根目录
+ * @param newName 下载完成后要改成的名称
  */
-export async function add115Lixian(magnet: string, cid = "0"): Promise<boolean> {
+export async function add115Lixian(magnet: string, cid = "0", newName = ""): Promise<boolean> {
   if (!magnet) {
     tip("warning", "没有可下载的磁力链");
     return false;
   }
   try {
-    const result = await cloud115QrcodeApi.addLixianTask(magnet, cid);
+    const result = await cloud115QrcodeApi.addLixianTask(magnet, cid, newName);
     tip("success", result?.message || "已提交到 115 离线下载");
     return true;
   } catch (error) {

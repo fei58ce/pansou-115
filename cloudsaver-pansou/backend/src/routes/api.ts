@@ -69,6 +69,9 @@ router.get("/cloud115/lixian/history", (req, res) =>
 router.post("/cloud115/lixian/retry", (req, res) =>
   cloud115QrcodeController.retryLixianTask(req, res)
 );
+router.post("/cloud115/lixian/rename", (req, res) =>
+  cloud115QrcodeController.renameLixianTask(req, res)
+);
 
 // OneStrm 状态
 router.get("/onestrm/status", (req, res) => oneStrmController.getStatus(req, res));

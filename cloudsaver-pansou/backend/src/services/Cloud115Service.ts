@@ -65,6 +65,65 @@ export class Cloud115Service implements ICloudStorageService {
     }
   }
 
+  /** 按名称查找目录下的文件/文件夹（用于转存后改名） */
+  async findItemByName(
+    cookie: string,
+    parentCid: string,
+    name: string
+  ): Promise<{ id: string; isFolder: boolean; name: string } | null> {
+    const response = await this.api.get("/files", {
+      ...this.withCookie(cookie),
+      params: {
+        aid: 1,
+        cid: parentCid || "0",
+        o: "user_ptime",
+        asc: 0,
+        offset: 0,
+        show_dir: 1,
+        limit: 100,
+        type: 0,
+        format: "json",
+        star: 0,
+        suffix: "",
+        natsort: 0,
+        snap: 0,
+        record_open_time: 1,
+        fc_mix: 0,
+      },
+    });
+
+    if (!response.data?.state) {
+      throw new Error("获取 115 目录失败:" + (response.data?.error || "未知错误"));
+    }
+
+    const items = response.data.data || [];
+    const item = items.find((x: { n?: string }) => x.n === name) as
+      | { cid?: string; fid?: string; n?: string }
+      | undefined;
+    if (!item) return null;
+
+    const id = item.cid || item.fid || "";
+    if (!id) return null;
+    return { id, isFolder: Boolean(item.cid), name: item.n || name };
+  }
+
+  /** 重命名 115 文件或文件夹 */
+  async renameItem(cookie: string, id: string, newName: string): Promise<void> {
+    const body = new URLSearchParams();
+    body.append("aid", "1");
+    body.append("files_new_name[" + id + "]", newName);
+    const response = await this.api.post(
+      "/files/batch_rename",
+      body.toString(),
+      this.withCookie(cookie)
+    );
+    if (!response.data?.state) {
+      throw new Error(
+        "重命名失败:" + (response.data?.error || response.data?.errMsg || "未知错误")
+      );
+    }
+  }
+
   async getShareInfo(
     shareCode: string,
     cookie: string,
@@ -150,9 +209,37 @@ export class Cloud115Service implements ICloudStorageService {
     );
     logger.info("保存文件:", response.data);
     if (response.data.state) {
+      const saved = (response.data.data || {}) as {
+        receive_title?: string;
+        [key: string]: unknown;
+      };
+      let rename: {
+        attempted: boolean;
+        success: boolean;
+        message: string;
+        newName?: string;
+      } = { attempted: false, success: false, message: "" };
+
+      const newName = params.newName?.trim();
+      const originalName = typeof saved.receive_title === "string" ? saved.receive_title : "";
+      if (newName && originalName && newName !== originalName) {
+        rename.attempted = true;
+        try {
+          const item = await this.findItemByName(cookie, params.folderId || "0", originalName);
+          if (!item) {
+            throw new Error("未找到刚转存的文件/文件夹，请稍后在 115 中手动改名");
+          }
+          await this.renameItem(cookie, item.id, newName);
+          rename = { attempted: true, success: true, message: "已重命名", newName };
+        } catch (error) {
+          rename.message = error instanceof Error ? error.message : "重命名失败";
+          logger.warn("转存后重命名失败:", error);
+        }
+      }
+
       return {
         message: response.data.error,
-        data: response.data.data,
+        data: { ...saved, rename },
       };
     } else {
       logger.error("保存文件失败:", response.data.error);

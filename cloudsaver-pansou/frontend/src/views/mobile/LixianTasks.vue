@@ -72,10 +72,22 @@
             >
               重试
             </van-button>
+            <van-button size="mini" type="primary" plain @click.stop="openRename(record)">
+              改名
+            </van-button>
           </div>
         </template>
       </van-cell>
     </van-cell-group>
+
+    <van-dialog
+      v-model:show="renameDialogVisible"
+      title="重命名 115 文件/文件夹"
+      show-cancel-button
+      @confirm="confirmRename"
+    >
+      <van-field v-model="renameValue" label="新名称" placeholder="请输入新的文件名" />
+    </van-dialog>
   </div>
 </template>
 
@@ -95,6 +107,9 @@ const error = ref("");
 const strmStatus = ref<OneStrmStrmStatus | null>(null);
 const strmLoading = ref(false);
 const strmError = ref("");
+const renameDialogVisible = ref(false);
+const renameValue = ref("");
+const renameRecordId = ref("");
 
 const statusType = (status: number): "success" | "warning" | "danger" | "primary" => {
   if (status === 2) return "success";
@@ -178,6 +193,31 @@ const loadTasks = async () => {
     loading.value = false;
   }
   await loadStrmStatus();
+};
+
+const openRename = (record: LocalHistoryRecord) => {
+  renameRecordId.value = record.id;
+  renameValue.value = record.renameTo || displayName(record);
+  renameDialogVisible.value = true;
+};
+
+const confirmRename = async () => {
+  const value = renameValue.value.trim();
+  if (!value) {
+    showToast("名称不能为空");
+    return;
+  }
+  if (/[\\/]/.test(value)) {
+    showToast("名称不能包含斜杠");
+    return;
+  }
+  try {
+    await cloud115QrcodeApi.renameLixianTask(renameRecordId.value, value);
+    showToast("重命名成功");
+    await loadTasks();
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : "重命名失败");
+  }
 };
 
 const retry = async (recordId: string) => {

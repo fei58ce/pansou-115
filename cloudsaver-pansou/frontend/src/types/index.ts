@@ -62,6 +62,7 @@ export interface ShareFileInfoAndFolder {
   folderId: string;
   shareCode: string;
   receiveCode?: string;
+  newName?: string;
 }
 
 export interface Folder {
@@ -76,6 +77,7 @@ export interface SaveFileParams {
   folderId: string; // 文件夹id
   fids: string[]; // 存储文件id
   fidTokens?: string[]; // 存储文件token
+  newName?: string; // 转存后重命名
 }
 
 export interface GetShareInfoParams {

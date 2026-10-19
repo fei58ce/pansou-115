@@ -71,6 +71,8 @@ export interface LixianHistoryRecord {
   statusText: string;
   percent: number;
   lastError: string;
+  renameTo?: string;
+  renameApplied?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -98,10 +100,10 @@ export const cloud115QrcodeApi = {
   },
 
   /** 添加 115 离线下载任务 */
-  async addLixianTask(url: string, cid = "0") {
+  async addLixianTask(url: string, cid = "0", newName = "") {
     const res = await request.post<{ taskId: string; message: string }>(
       "/api/cloud115/lixian/add",
-      { url, cid }
+      { url, cid, newName }
     );
     return assertOk(res, "提交 115 离线下载失败");
   },
@@ -120,6 +122,14 @@ export const cloud115QrcodeApi = {
   async retryLixianTask(recordId: string) {
     const res = await request.post("/api/cloud115/lixian/retry", { recordId });
     return assertOk(res, "重试离线任务失败");
+  },
+
+  async renameLixianTask(recordId: string, newName: string) {
+    const res = await request.post<{ renamed: boolean; newName: string }>(
+      "/api/cloud115/lixian/rename",
+      { recordId, newName }
+    );
+    return assertOk(res, "重命名离线任务失败");
   },
 
   async checkAuth() {

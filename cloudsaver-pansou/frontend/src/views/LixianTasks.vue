@@ -94,7 +94,7 @@
           <template #default="scope">{{ formatTime(scope.row.createdAt) }}</template>
         </el-table-column>
         <el-table-column prop="lastError" label="失败原因" min-width="180" show-overflow-tooltip />
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column label="操作" width="150" fixed="right">
           <template #default="scope">
             <el-button
               v-if="scope.row.status === 3"
@@ -104,7 +104,7 @@
             >
               重试
             </el-button>
-            <span v-else class="no-action">-</span>
+            <el-button link type="primary" @click="rename(scope.row)">改名</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { cloud115QrcodeApi, type LixianHistoryRecord } from "@/api/cloud115Qrcode";
 import { oneStrmApi, type OneStrmStrmFile, type OneStrmStrmStatus } from "@/api/oneStrm";
 
@@ -211,6 +211,31 @@ const loadTasks = async () => {
     loading.value = false;
   }
   await loadStrmStatus();
+};
+
+const rename = async (record: LixianHistoryRecord) => {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      "请输入新的文件名（不含路径）",
+      "重命名 115 文件/文件夹",
+      {
+        inputValue: record.renameTo || displayName(record),
+        confirmButtonText: "确定改名",
+        cancelButtonText: "取消",
+        inputValidator: (value) => {
+          if (!value || !value.trim()) return "名称不能为空";
+          if (/[\\/]/.test(value)) return "名称不能包含斜杠";
+          return true;
+        },
+      }
+    );
+    await cloud115QrcodeApi.renameLixianTask(record.id, value.trim());
+    ElMessage.success("重命名成功");
+    await loadTasks();
+  } catch (e) {
+    if (e === "cancel" || e === "close") return;
+    ElMessage.error(e instanceof Error ? e.message : "重命名失败");
+  }
 };
 
 const retry = async (recordId: string) => {

@@ -32,6 +32,7 @@ export interface SaveFileParams {
   folderId?: string; // 文件夹id
   fids?: string[]; // 存储文件id
   fidTokens?: string[]; // 存储文件token
+  newName?: string; // 转存后重命名
 }
 
 export interface SaveFileResponse {

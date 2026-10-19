@@ -59,6 +59,7 @@ export const CLOUD_DRIVES: CloudDriveConfig[] = [
       fileId: shareInfoAndFolder.shareInfo.list[0].fileId,
       folderId: shareInfoAndFolder.folderId,
       fids: shareInfoAndFolder.shareInfo.list.map((item: { fileId?: string }) => item.fileId || ""),
+      newName: shareInfoAndFolder.newName,
     }),
   },
   {
@@ -212,11 +213,11 @@ export const useResourceStore = defineStore("resource", {
     },
 
     // 转存资源
-    async saveResource(resource: ResourceItem, folderId: string): Promise<void> {
+    async saveResource(resource: ResourceItem, folderId: string, newName?: string): Promise<void> {
       const savePromises: Promise<void>[] = [];
       CLOUD_DRIVES.forEach((drive) => {
         if (resource.cloudLinks.some((link) => drive.regex.test(link))) {
-          savePromises.push(this.saveResourceToDrive(resource, folderId, drive));
+          savePromises.push(this.saveResourceToDrive(resource, folderId, drive, newName));
         }
       });
       await Promise.all(savePromises);
@@ -226,7 +227,8 @@ export const useResourceStore = defineStore("resource", {
     async saveResourceToDrive(
       resource: ResourceItem,
       folderId: string,
-      drive: CloudDriveConfig
+      drive: CloudDriveConfig,
+      newName?: string
     ): Promise<void> {
       const link = resource.cloudLinks.find((link) => drive.regex.test(link));
       if (!link) return;
@@ -245,6 +247,7 @@ export const useResourceStore = defineStore("resource", {
         shareInfo,
         ...parsedCode,
         folderId,
+        newName: drive.type === "pan115" ? newName?.trim() : undefined,
       });
       const result = await drive.api.saveFile(params);
 

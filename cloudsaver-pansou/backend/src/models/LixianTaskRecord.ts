@@ -1,4 +1,4 @@
-﻿import { DataTypes, Model, Optional } from "sequelize";
+import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 
 export interface LixianTaskRecordAttributes {
@@ -12,12 +12,22 @@ export interface LixianTaskRecordAttributes {
   statusText: string;
   percent: number;
   lastError: string;
+  renameTo: string;
+  renameApplied: boolean;
 }
 
 interface LixianTaskRecordCreationAttributes
   extends Optional<
     LixianTaskRecordAttributes,
-    "id" | "taskId" | "name" | "status" | "statusText" | "percent" | "lastError"
+    | "id"
+    | "taskId"
+    | "name"
+    | "status"
+    | "statusText"
+    | "percent"
+    | "lastError"
+    | "renameTo"
+    | "renameApplied"
   > {}
 
 class LixianTaskRecord
@@ -34,6 +44,8 @@ class LixianTaskRecord
   public statusText!: string;
   public percent!: number;
   public lastError!: string;
+  public renameTo!: string;
+  public renameApplied!: boolean;
 }
 
 LixianTaskRecord.init(
@@ -85,6 +97,16 @@ LixianTaskRecord.init(
       type: DataTypes.TEXT,
       allowNull: false,
       defaultValue: "",
+    },
+    renameTo: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "",
+    },
+    renameApplied: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {

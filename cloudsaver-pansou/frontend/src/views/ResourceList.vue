@@ -126,6 +126,10 @@
           v-if="saveDialogVisible && saveDialogStep === 1 && resourceStore.resourceSelect.length"
           :cloud-type="currentResource.cloudType"
         />
+        <div v-if="saveDialogVisible && saveDialogStep === 2" class="rename-field">
+          <label>保存名称（可修改广告名）</label>
+          <el-input v-model="saveNewName" placeholder="留空则使用原文件名" clearable />
+        </div>
         <folder-select
           v-if="saveDialogVisible && saveDialogStep === 2"
           :cloud-type="currentResource.cloudType"
@@ -153,11 +157,21 @@
     >
       <div v-if="lixianResource" class="dialog-header" style="margin-bottom: 12px">
         <div class="title-sub">
-          <span class="resource-title" :title="lixianResource.title">{{ lixianResource.title }}</span>
+          <span class="resource-title" :title="lixianResource.title">{{
+            lixianResource.title
+          }}</span>
         </div>
         <div class="file-size" style="font-size: 12px; word-break: break-all; margin-top: 4px">
           {{ resourceStore.extractMagnets(lixianResource)[0]?.slice(0, 80) }}...
         </div>
+      </div>
+      <div class="rename-field">
+        <label>保存名称（可修改广告名）</label>
+        <el-input
+          v-model="lixianNewName"
+          placeholder="留空则使用原文件名，完成后也可再改"
+          clearable
+        />
       </div>
       <folder-select
         v-if="lixianDialogVisible"
@@ -215,6 +229,7 @@ const userStore = useUserSettingStore();
 const saveDialogVisible = ref(false);
 const currentResource = ref<ResourceItem | null>(null);
 const currentFolderId = ref<string | null>(null);
+const saveNewName = ref("");
 const saveDialogStep = ref<1 | 2>(1);
 
 // 115 离线下载选目录
@@ -222,6 +237,7 @@ const lixianDialogVisible = ref(false);
 const lixianResource = ref<ResourceItem | null>(null);
 const lixianFolderId = ref<string | null>(null);
 const lixianSubmitting = ref(false);
+const lixianNewName = ref("");
 
 const refreshResources = async () => {
   resourceStore.searchResources("", false);
@@ -259,6 +275,8 @@ const handleConfirmClick = async () => {
       ElMessage.warning("请选择要保存的资源");
       return;
     }
+    const selected = resourceStore.resourceSelect.find((x) => x.isChecked);
+    saveNewName.value = selected?.fileName || currentResource.value?.title || "";
     saveDialogStep.value = 2;
   } else {
     handleSaveBtnClick();
@@ -268,7 +286,7 @@ const handleConfirmClick = async () => {
 const handleSaveBtnClick = async () => {
   if (!currentResource.value || !currentFolderId.value) return;
   saveDialogVisible.value = false;
-  await resourceStore.saveResource(currentResource.value, currentFolderId.value);
+  await resourceStore.saveResource(currentResource.value, currentFolderId.value, saveNewName.value);
 };
 const setDisplayStyle = (style: string) => {
   userStore.setDisplayStyle(style as "card" | "table");
@@ -304,6 +322,7 @@ const handleLixian = (resource: ResourceItem) => {
   }
   lixianResource.value = resource;
   lixianFolderId.value = null;
+  lixianNewName.value = resource.title || "";
   lixianDialogVisible.value = true;
 };
 
@@ -322,11 +341,12 @@ const submitLixian = async (cid?: string) => {
   const targetCid = cid ?? lixianFolderId.value ?? "0";
   lixianSubmitting.value = true;
   try {
-    const ok = await add115Lixian(magnet, targetCid);
+    const ok = await add115Lixian(magnet, targetCid, lixianNewName.value);
     if (ok) {
       lixianDialogVisible.value = false;
       lixianResource.value = null;
       lixianFolderId.value = null;
+      lixianNewName.value = "";
     }
   } finally {
     lixianSubmitting.value = false;
@@ -634,6 +654,17 @@ onBeforeUnmount(() => {
   .el-table__expand-icon {
     height: 23px;
     line-height: 23px;
+  }
+}
+
+.rename-field {
+  margin-bottom: 12px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--theme-text-regular);
+    font-size: 13px;
   }
 }
 

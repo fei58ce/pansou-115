@@ -57,6 +57,12 @@
           <span class="header__title">115离线 · 选择目录</span>
         </div>
         <div class="save-popup__content">
+          <van-field
+            v-model="lixianNewName"
+            label="保存名称"
+            placeholder="可修改广告文件名"
+            clearable
+          />
           <folder-select
             v-if="lixianDialogVisible"
             cloud-type="pan115"
@@ -150,6 +156,13 @@
             :cloud-type="currentResource?.cloudType"
           />
 
+          <van-field
+            v-if="saveDialogVisible && saveDialogStep === 2"
+            v-model="saveNewName"
+            label="保存名称"
+            placeholder="可修改广告文件名"
+            clearable
+          />
           <folder-select
             v-if="saveDialogVisible && saveDialogStep === 2 && currentResource"
             :cloud-type="currentResource.cloudType"
@@ -213,6 +226,7 @@ const resourceStore = useResourceStore();
 const saveDialogVisible = ref(false);
 const currentResource = ref<ResourceItem | null>(null);
 const currentFolderId = ref<string | null>(null);
+const saveNewName = ref("");
 const currentFolderPath = ref<Folder[] | null>(null);
 const saveDialogStep = ref<1 | 2>(1);
 const currentTab = ref<string>("");
@@ -225,6 +239,7 @@ const lixianResource = ref<ResourceItem | null>(null);
 const lixianFolderId = ref<string | null>(null);
 const lixianFolderPath = ref<Folder[] | null>(null);
 const lixianSubmitting = ref(false);
+const lixianNewName = ref("");
 
 // 计算属性
 const getCurrentFolderName = computed(() => {
@@ -301,6 +316,7 @@ const handleLixian = (resource: ResourceItem) => {
   lixianResource.value = resource;
   lixianFolderId.value = null;
   lixianFolderPath.value = null;
+  lixianNewName.value = resource.title || "";
   lixianDialogVisible.value = true;
 };
 
@@ -320,12 +336,13 @@ const submitLixian = async (cid?: string) => {
   const targetCid = cid ?? lixianFolderId.value ?? "0";
   lixianSubmitting.value = true;
   try {
-    const ok = await add115Lixian(magnet, targetCid);
+    const ok = await add115Lixian(magnet, targetCid, lixianNewName.value);
     if (ok) {
       lixianDialogVisible.value = false;
       lixianResource.value = null;
       lixianFolderId.value = null;
       lixianFolderPath.value = null;
+      lixianNewName.value = "";
     }
   } finally {
     lixianSubmitting.value = false;
@@ -344,6 +361,8 @@ const handleConfirmClick = async () => {
       showToast("请选择要保存的资源");
       return;
     }
+    const selected = resourceStore.resourceSelect.find((x) => x.isChecked);
+    saveNewName.value = selected?.fileName || currentResource.value?.title || "";
     saveDialogStep.value = 2;
   } else {
     handleSaveBtnClick();
@@ -353,7 +372,7 @@ const handleConfirmClick = async () => {
 const handleSaveBtnClick = async () => {
   if (!currentResource.value || !currentFolderId.value) return;
   saveDialogVisible.value = false;
-  await resourceStore.saveResource(currentResource.value, currentFolderId.value);
+  await resourceStore.saveResource(currentResource.value, currentFolderId.value, saveNewName.value);
 };
 
 const searchMovieforTag = (tag: string) => {
