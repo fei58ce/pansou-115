@@ -27,7 +27,8 @@ services:
     environment:
       JWT_SECRET: "change-me-to-a-long-random-secret"
       TELEGRAM_BASE_URL: "https://t.me/s"
-      TELE_CHANNELS: '[{"id":"Channel_Shares_115","name":"115分享"},{"id":"Lsp115","name":"115资源分享"},{"id":"regeng115","name":"115影视热更"},{"id":"vip115hot","name":"懒狗115"},{"id":"gimy115iso","name":"剧迷115原盘"}]'
+      # 以下 25 个频道均已验证 t.me/s/<id> 可免登录读取
+      TELE_CHANNELS: '[{"id":"tgsearchers7","name":"资源宇宙7"},{"id":"Lsp115","name":"115网盘资源分享"},{"id":"taoxgzy","name":"我的资源"},{"id":"Channel_Shares_115","name":"Shares_115_Channel"},{"id":"vip115hot","name":"懒狗集中营"},{"id":"regeng115","name":"115网盘影视热更"},{"id":"gimy115iso","name":"剧迷115影视原盘"},{"id":"yydf_hzl","name":"网盘资源合集"},{"id":"leoziyuan","name":"LEO网盘搜集"},{"id":"zyfb123","name":"112233"},{"id":"cilidianying","name":"磁力电影分享"},{"id":"ciliziyuanku","name":"磁力资源库"},{"id":"seedhub_pro","name":"SeedHub影视动漫"},{"id":"QukanMovie","name":"115影视资源分享"},{"id":"movielover8888_film3","name":"绝版风月"},{"id":"dianying4k","name":"4K影视屋"},{"id":"Netdisk_Movies","name":"海外影视资源"},{"id":"SharePanFilms","name":"网盘高分影视"},{"id":"baicaoZY","name":"百草网盘资源"},{"id":"PanjClub","name":"盘酱酱Club"},{"id":"Q66Share","name":"阿里云盘吧"},{"id":"kduanju","name":"热门短剧"},{"id":"CBduanju","name":"全网电影资源"},{"id":"yoyokuakeduanju","name":"YOYO资源"},{"id":"guoman4K","name":"国漫4K"}]'
       PANSOU_BASE_URL: "http://pansou:8888"
       # PanSou 启用类型（含 magnet 磁力搜索）
       PANSOU_CLOUD_TYPES: "baidu,aliyun,quark,115,xunlei,pikpak,123,magnet,ed2k"
