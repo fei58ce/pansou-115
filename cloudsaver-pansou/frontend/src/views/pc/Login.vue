@@ -236,9 +236,18 @@ const handleRegister = async () => {
 
 .login-page {
   @include flex-center;
+  box-sizing: border-box;
   min-height: 100vh;
+  padding: 2rem 1rem;
+  overflow-y: auto;
   background: var(--theme-bg);
   position: relative;
+}
+
+@media (max-height: 760px) {
+  .login-page {
+    align-items: flex-start;
+  }
 }
 
 .login-bg {
@@ -247,15 +256,17 @@ const handleRegister = async () => {
   background-image: url("@/assets/images/login-bg.jpg");
   background-size: cover;
   background-position: center;
-  filter: blur(3px);
+  filter: blur(0.2rem);
   z-index: 0;
 }
 
 .login-card {
   @include glass-effect;
   position: relative;
-  width: 420px;
-  padding: 32px;
+  box-sizing: border-box;
+  width: 28rem;
+  max-width: 100%;
+  padding: 2.1333rem;
   border-radius: var(--theme-radius);
   box-shadow: var(--theme-shadow);
   z-index: 1;
@@ -263,23 +274,23 @@ const handleRegister = async () => {
 
 .card-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 2.1333rem;
 
   .logo {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 16px;
+    width: 4.2667rem;
+    height: 4.2667rem;
+    margin-bottom: 1.0667rem;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 1.6rem;
     font-weight: 600;
     color: var(--theme-text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 0.5333rem;
   }
 
   .subtitle {
-    font-size: 14px;
+    font-size: 0.9333rem;
     color: var(--theme-text-secondary);
   }
 }
@@ -295,7 +306,7 @@ const handleRegister = async () => {
 
   :deep(.el-tabs__item) {
     color: var(--theme-text-secondary);
-    font-size: 16px;
+    font-size: 1.0667rem;
 
     &.is-active {
       color: var(--theme-primary);
@@ -305,7 +316,7 @@ const handleRegister = async () => {
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 24px;
+  margin-bottom: 1.6rem;
 
   .el-input__wrapper {
     background-color: rgba(255, 255, 255, 0.5);
@@ -324,7 +335,7 @@ const handleRegister = async () => {
   }
 
   .el-input__inner {
-    height: 42px;
+    height: 2.8rem;
   }
 }
 
@@ -332,13 +343,13 @@ const handleRegister = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 1.6rem;
 }
 
 .submit-btn {
   width: 100%;
-  height: 42px;
-  font-size: 16px;
+  height: 2.8rem;
+  font-size: 1.0667rem;
   border-radius: var(--theme-radius-sm);
   background: var(--theme-primary);
   transition: var(--theme-transition);
