@@ -83,7 +83,7 @@
             </template>
           </el-table-column>
         </el-table>
-        <div class="load-more">
+        <div v-if="!props.row.id.startsWith('pansou_')" class="load-more">
           <el-button :loading="props.row.loading" @click="handleLoadMore(props.row.id)">
             加载更多
           </el-button>

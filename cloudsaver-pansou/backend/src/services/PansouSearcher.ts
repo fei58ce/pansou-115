@@ -59,10 +59,19 @@ interface PansouCheckResponse {
   results?: PansouCheckResult[];
 }
 
+// 补图只等这么久，没查完的在后台继续并写进缓存，下次搜同一部直接命中
+const POSTER_WAIT_MS = 5000;
+const POSTER_CACHE_LIMIT = 2000;
+const POSTER_HIT_TTL = 24 * 60 * 60 * 1000;
+// 没查到海报的标题过一阵再查，TMDB/豆瓣可能只是当时没连上
+const POSTER_MISS_TTL = 30 * 60 * 1000;
+const LINK_CHECK_TIMEOUT = 12000;
+
 @injectable()
 export class PansouSearcher {
   private api: AxiosInstance;
-  private posterCache = new Map<string, string>();
+  private posterCache = new Map<string, { poster: string; at: number }>();
+  private pendingPosters = new Map<string, Promise<string>>();
 
   constructor(
     @inject(TYPES.TmdbService) private tmdbService: TmdbService,
@@ -110,14 +119,15 @@ export class PansouSearcher {
         magnet: targetType === "magnet" ? [link.url] : undefined,
         ed2k: targetType === "ed2k" ? [link.url] : undefined,
       }));
-      if (targetType !== "magnet" && targetType !== "ed2k") {
-        await this.fillMissingPosters(items);
-      }
       const uniqueItems = this.dedupeItems(items);
-      if (targetType === "115") {
-        await this.checkLinkStatus(uniqueItems, targetType);
-      }
-      return this.rankItems(uniqueItems, keyword);
+      const needPosters = targetType !== "magnet" && targetType !== "ed2k";
+      // 补海报和 115 探活互不依赖，并行跑
+      await Promise.all([
+        needPosters ? this.fillMissingPosters(uniqueItems) : null,
+        targetType === "115" ? this.checkLinkStatus(uniqueItems, targetType) : null,
+      ]);
+      const aliveItems = uniqueItems.filter((item) => item.linkStatus !== "bad");
+      return this.rankItems(aliveItems, keyword);
     } catch (error) {
       logger.error("PanSou 搜索失败:", error);
       return [];
@@ -205,17 +215,21 @@ export class PansouSearcher {
       .trim();
   }
 
-  /** 批量探活 115 链接；只过滤明确 bad，网络不确定时保留结果。 */
+  /** 批量探活 115 链接并写回 linkStatus；探活失败或超时就不标状态，结果照常保留。 */
   private async checkLinkStatus(items: SearchItem[], cloudType: string): Promise<void> {
     if (!items.length) return;
     try {
-      const response = await this.api.post<PansouCheckResponse>("/api/check/links", {
-        items: items.map((item) => ({
-          disk_type: cloudType,
-          url: item.cloudLinks[0],
-          password: this.extractPassword(item.cloudLinks[0]),
-        })),
-      });
+      const response = await this.api.post<PansouCheckResponse>(
+        "/api/check/links",
+        {
+          items: items.map((item) => ({
+            disk_type: cloudType,
+            url: item.cloudLinks[0],
+            password: this.extractPassword(item.cloudLinks[0]),
+          })),
+        },
+        { timeout: LINK_CHECK_TIMEOUT }
+      );
       const resultMap = new Map((response.data?.results || []).map((item) => [item.url, item]));
       for (const item of items) {
         const result = resultMap.get(item.cloudLinks[0]);
@@ -223,9 +237,6 @@ export class PansouSearcher {
           item.linkStatus = result.state;
           item.linkStatusMessage = result.summary || "";
         }
-      }
-      for (let i = items.length - 1; i >= 0; i--) {
-        if (items[i].linkStatus === "bad") items.splice(i, 1);
       }
     } catch (error) {
       logger.warn("115 链接探活失败，保留原始搜索结果:", error);
@@ -250,31 +261,64 @@ export class PansouSearcher {
 
     if (titles.length === 0) return;
 
-    await Promise.all(
-      titles.map(async (title) => {
-        if (this.posterCache.has(title)) return;
-        let poster = "";
-        try {
-          poster = await this.tmdbService.searchPoster(title);
-        } catch (error) {
-          logger.warn(`TMDB 补图失败（${title}）:`, error);
-        }
-        if (!poster) {
-          try {
-            poster = await this.doubanService.searchPoster(title);
-          } catch (error) {
-            logger.warn(`豆瓣补图失败（${title}）:`, error);
-          }
-        }
-        this.posterCache.set(title, poster);
-      })
-    );
+    const lookups = titles
+      .filter((title) => this.cachedPoster(title) === undefined)
+      .map((title) => this.lookupPoster(title));
+    if (lookups.length > 0) {
+      let timer: NodeJS.Timeout | undefined;
+      await Promise.race([
+        Promise.all(lookups),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, POSTER_WAIT_MS);
+        }),
+      ]);
+      clearTimeout(timer);
+    }
 
     for (const item of items) {
       if (item.image) continue;
-      const title = this.extractMediaTitle(item.title);
-      item.image = this.posterCache.get(title) || "";
+      item.image = this.cachedPoster(this.extractMediaTitle(item.title)) || "";
     }
+  }
+
+  private cachedPoster(title: string): string | undefined {
+    const hit = this.posterCache.get(title);
+    if (!hit) return undefined;
+    if (Date.now() - hit.at > (hit.poster ? POSTER_HIT_TTL : POSTER_MISS_TTL)) {
+      this.posterCache.delete(title);
+      return undefined;
+    }
+    return hit.poster;
+  }
+
+  /** 同一标题同时只查一次：先 TMDB，查不到再豆瓣，结果（包括没查到）写进缓存。 */
+  private lookupPoster(title: string): Promise<string> {
+    const pending = this.pendingPosters.get(title);
+    if (pending) return pending;
+    const task = (async () => {
+      let poster = "";
+      try {
+        poster = await this.tmdbService.searchPoster(title);
+      } catch (error) {
+        logger.warn(`TMDB 补图失败（${title}）:`, error);
+      }
+      if (!poster) {
+        try {
+          poster = await this.doubanService.searchPoster(title);
+        } catch (error) {
+          logger.warn(`豆瓣补图失败（${title}）:`, error);
+        }
+      }
+      this.posterCache.delete(title);
+      this.posterCache.set(title, { poster, at: Date.now() });
+      const oldest = this.posterCache.keys().next().value;
+      if (this.posterCache.size > POSTER_CACHE_LIMIT && oldest !== undefined) {
+        this.posterCache.delete(oldest);
+      }
+      return poster;
+    })().finally(() => this.pendingPosters.delete(title));
+    this.pendingPosters.set(title, task);
+    return task;
   }
 
   /** 去掉季数、清晰度、字幕和资源包装信息，保留影视主标题。 */

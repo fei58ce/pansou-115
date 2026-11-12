@@ -201,7 +201,7 @@
           </el-card>
         </div>
 
-        <div class="load-more">
+        <div v-if="!group.id.startsWith('pansou_')" class="load-more">
           <el-button :loading="group.loading" @click="handleLoadMore(group.id)">
             <el-icon><Plus /></el-icon>
             加载更多

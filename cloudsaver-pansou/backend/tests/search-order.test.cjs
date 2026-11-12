@@ -35,3 +35,15 @@ test('115 网盘排在最前、磁力链接排在最后，TG 频道保持原顺�
 test('没有 115 结果时 TG 频道在前，磁力链接仍在最后', async () => {
   assert.deepEqual((await searchGroups({ magnet: [{ title: 'magnet' }] })).map(([id]) => id), ['tg_a', 'tg_b', 'pansou_magnet']);
 });
+
+test('加载更多只翻对应 TG 频道，不再重复查 PanSou', async () => {
+  const calls = [];
+  const searcher = { searchAll: async (...args) => { calls.push(['tg', ...args]); return { data: [group('tg_a')] }; } };
+  const pansouSearcher = { search: async (_keyword, type) => { calls.push(['pansou', type]); return [{ title: type }]; } };
+  let body;
+  const res = { status() { return res; }, json(value) { body = value; } };
+  const query = { keyword: '庆余年', channelId: 'tg_a', lastMessageId: '42' };
+  await new ResourceController(searcher, pansouSearcher).search({ query }, res);
+  assert.deepEqual(body.data.map((item) => item.id), ['tg_a']);
+  assert.deepEqual(calls, [['tg', '庆余年', 'tg_a', '42']]);
+});

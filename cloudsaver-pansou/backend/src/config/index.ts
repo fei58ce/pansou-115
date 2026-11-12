@@ -55,6 +55,10 @@ interface Config {
      */
     cloudTypes: string[];
   };
+  douban: {
+    /** 可选：豆瓣接口被风控时才需要，只从环境变量读，不要写进代码 */
+    cookie: string;
+  };
 }
 
 // 从环境变量读取频道配置
@@ -148,5 +152,8 @@ export const config: Config = {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean),
+  },
+  douban: {
+    cookie: process.env.DOUBAN_COOKIE?.trim() || "",
   },
 };

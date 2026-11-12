@@ -58,6 +58,16 @@ export class ResourceController extends BaseController {
         });
       }
 
+      // 加载更多只翻 TG 频道的下一页：PanSou 一次就返回全部结果，再查只会重复
+      if (lastMessageId) {
+        const tgResults = await this.searcher.searchAll(
+          keywordText,
+          channelId as string,
+          lastMessageId as string
+        );
+        return this.rememberImages({ data: tgResults.data || [] });
+      }
+
       // 默认并行调用：TG 频道 + PanSou 115 + PanSou magnet（如果启用）
       const enableMagnet = config.panSou.cloudTypes.includes("magnet");
       const tasks: Promise<any>[] = [

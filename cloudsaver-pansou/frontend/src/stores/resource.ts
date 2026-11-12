@@ -133,15 +133,14 @@ export const useResourceStore = defineStore("resource", {
         let lastMessageId = "";
         if (isLoadMore) {
           const list = this.resources.find((x) => x.id === channelId)?.list || [];
-          lastMessageId = list[list.length - 1].messageId || "";
-          if (list[list.length - 1].isLastMessage) {
+          const last = list[list.length - 1];
+          lastMessageId = last?.messageId || "";
+          if (last?.isLastMessage) {
             ElMessage.warning("没有更多了~");
             return;
           }
-          if (!lastMessageId) {
-            ElMessage.error("当次搜索源不支持加载更多");
-            return;
-          }
+          // PanSou 分组一次就返回了全部结果，没有下一页；手机端滚到底也会走到这里，不弹提示
+          if (!lastMessageId) return;
           keyword = this.keyword;
         }
         let { data = [] } = await resourceApi.search(keyword || "", channelId, lastMessageId);
@@ -176,13 +175,15 @@ export const useResourceStore = defineStore("resource", {
           }));
         console.log(data);
         if (isLoadMore) {
-          const findedIndex = this.resources.findIndex((item) => item.id === data[0]?.id);
-          if (findedIndex !== -1) {
-            this.resources[findedIndex].list.push(...data[0].list);
-          }
-          if (data.length === 0) {
-            const list = this.resources.find((item) => item.id === channelId)?.list;
-            list && list[list.length - 1] && (list[list.length - 1]!.isLastMessage = true);
+          const list = this.resources.find((item) => item.id === channelId)?.list || [];
+          const seen = new Set(list.map((item) => item.messageId));
+          const fresh = (data.find((item) => item.id === channelId)?.list || []).filter(
+            (item) => !seen.has(item.messageId)
+          );
+          if (fresh.length > 0) {
+            list.push(...fresh);
+          } else {
+            list[list.length - 1] && (list[list.length - 1]!.isLastMessage = true);
             ElMessage.warning("没有更多了~");
           }
         } else {
