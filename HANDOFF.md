@@ -1,12 +1,160 @@
 # HANDOFF · 盘搜增强任务交接
 
-> 更新时间：2026-10-17（本轮续作后）  
+> 更新时间：2026-11-12（订阅追更实现/测试交接快照）
 > 工作区：`G:\work\盘搜`  
 > 主工程：`cloudsaver-pansou/`（基于 CloudSaver + PanSou）
 
 ---
 
-## 1. 当前任务（用户需求）
+## 当前任务快照（2026-11-12，接手先看本节）
+
+### 1）当前项目位置
+
+- Git 仓库根目录：G:\work\盘搜
+- 主工程：G:\work\盘搜\cloudsaver-pansou
+- 后端：G:\work\盘搜\cloudsaver-pansou\backend
+- 前端：G:\work\盘搜\cloudsaver-pansou\frontend
+- 当前分支：main
+- 线上地址：https://sou.aiapi.cfd
+- 线上部署目录：/opt/pansou115（服务器138.2.98.41，SSH用户ubuntu，Docker操作需要sudo）
+- 服务器不是Git检出目录，过去通过上传修改文件、docker compose build/up发布；发布时保留远端现有配置，不覆盖生产环境变量。
+
+### 2）当前用户任务与已确认规则
+
+实现“关注影片 → 自动发现新集 → 只补缺集至指定115目录 → 通知OneStrm”。
+
+**固定调度：每天北京时间18:00一次，时区Asia/Shanghai；不是每30分钟。**
+
+- 先检查用户选定的115分享及源目录，必要时补充搜索。
+- “续集”本期指同作品同季的新集，不自动跨季，不把电影第二部当本期自动追更。
+- 每条订阅绑定实际115账号及目标目录ID；目标丢失或账号变更不回退根目录。
+- 默认“仅后续新增”，首次完整检查只建立源目录基线；也可主动选“补齐缺集”。
+- 已有集跳过，不删除、不覆盖、不自动重命名用户视频。
+- 关闭网页后仍在服务端执行，保留立即检查、编辑、暂停/恢复、记录查看。
+- 不擅自创建真实影片订阅；当前没有替用户关注任何影片，也没有进行本次新功能的真实视频转存。
+
+### 3）一句话进度（务必区分实现/测试/上线）
+
+**主体代码已在本地完成，22项后端回归测试通过，前端构建通过，lint为0错误/21条既有警告；模拟环境的PC/手机关键流程已验收。当前功能代码尚未提交、推送或部署；生产功能不能认定已启用。**
+
+最新已提交的业务配置为2d06b38（25个免登录TG频道）；当前HEAD为5e9b05b（订阅追更设计文档）。本快照的文档提交会在其后新增；不要把文档提交误当作功能发布。
+
+### 4）本地已经完成
+
+- [x] 用户确认方案、每日18:00时间及书面设计。
+- [x] 纯规则：北京时间调度、115域名/分享解析、无损大整数JSON处理、明确季集识别、作品/年份/版本要求及文件去重。
+- [x] 独立115适配器：分享与目标目录分页、子目录遍历上限、fid/cid区分、单文件转存、返回目录一致性检查。
+- [x] SQLite新增四表：subscriptions、subscription_runs、subscription_entries、subscription_leases。
+- [x] 持久化执行租约、运行队列、同一订阅同一自然日自动任务去重、手动/自动互斥。
+- [x] “仅新增”基线与水位、补齐缺集、未知视频阻止误判、每轮最多新增10集。
+- [x] 写请求发出前持久化uncertain；超时后查目标核实，不盲目重发；崩溃恢复先保留/核实账本。
+- [x] 账号或目标目录异常暂停；编辑时拒绝有在途任务/未核实写入；目标目录重复绑定限制。
+- [x] 搜索补充采用严格匹配；“仅新增”模式的搜索结果缺少可靠发布时间或早于关注时间时待确认，不补旧资源。
+- [x] 转存核实成功后通知OneStrm；通知结果单独记账，不当成STRM生成成功；通知失败不重存视频。
+- [x] 用户隔离API：列表、保存、手动检查、状态切换和历史查询。
+- [x] PC/手机共用“我的追更”页面，导航、搜索结果卡片/表格“关注追更”入口。
+- [x] 目录选择器补齐分页和大整数ID保护；前端网络错误兼容无response对象。
+
+### 5）测试结果与证据
+
+2026-11-12最新重跑结果：
+
+- npm run test:subscriptions：**22项通过、0失败**，该命令包含后端tsc。
+- npm run build:frontend：**通过**（vue-tsc + Vite + PWA生成）。
+- npm run lint：**退出码0，0错误，21条既有warning**。
+- git diff --check：无空白错误（Windows会提示LF/CRLF转换警告，不是构建失败）。
+
+测试范围：18:00边界/UTC跨日、大整数ID、恶意分享域名、明确单集/合集/跨季、质量要求、同名续作、已有集、未知目标文件、仅新增基线、源读取失败、重复调度、权限隔离、并行租约、暂停、崩溃账本、转存超时实际成功/未成功、OneStrm失败不重复写盘、每轮10集上限、特殊字符标题、其他剧/季水位隔离、搜索发布时间不明。
+
+模拟UI已验证：创建订阅 → 进入测试剧/Season 01 → 选择目录ID101 → 保存 → 显示北京时间18:00 → 立即检查 → 暂停后按钮禁用 → 恢复 → 查看检查记录。所有数据只在本地mock内存，不涉及真实115。
+
+- 模拟服务：http://127.0.0.1:18088
+- 启动命令（主工程下）：node frontend/tests/subscriptions-preview.cjs
+- 模拟服务不能对外暴露，也不能当成生产后端使用。交接时已停止本轮mock服务；继续测试时用上述命令重启。
+- 电脑测试：1280宽，无横向溢出。
+- 手机测试：390×844，页面scrollWidth=390；编辑弹窗宽374px，无横向溢出。
+- 截图位于C:\Users\admin\.codex\visualizations\2026\10\16\01a142ce-71f1-7361-a94f-0dd2f29407a5\subscriptions-desktop-test.png和subscriptions-mobile-test.png（模拟数据，非线上验收）。
+
+### 6）当前卡住/尚未闭环
+
+1. **没有发布，而非功能已上线**：改动仍在工作树，新增模块/测试有untracked文件，后续要显式加入提交。
+2. **真实115只读适配校验未取得有效结果**：SSH简单命令可连到服务器，Docker容器列表能读取；但“PowerShell多行脚本管道 → ssh bash -s → docker exec -i node”的只读探测长时间无输出，已停止本轮该SSH进程。未拿到真实/files、/share/snap结构核对结果，不能声称实际增量转存已验收。改用临时脚本文件上传后执行，避免嵌套stdin/heredoc问题。
+3. **原生Chrome CDP检查未顺利建立会话**：check-deps提示Chrome可能等待授权；没有擅自同意权限。改用可用的应用内浏览器完成本地UI测试。跨轮旧tab句柄可能报browser.user unavailable，创建新的临时标签后可继续。
+4. **完整后端启动/生产迁移未验收**：模型与引擎使用隔离SQLite跑过集成测试，但尚未做实际服务冷启动、全站旧接口兼容、生产备份/回滚演练及上线后的调度核验。
+5. **不确定转存的人工处理入口尚未提供**：账本会阻止重发，安全但需核实真实目标；不能通过清表或删除账本“重试”。
+6. **匹配偏保守**：源文件/路径缺作品名或明确季集、字幕版本信息不全时进入待确认；目前是记录提示，没有单条待确认资源的人工批准转存入口。不要宣传为任何命名都能自动追更。
+7. **STRM仍待核实**：本期只可靠展示OneStrm通知结果；没有逐文件STRM生成/Emby播放确认，不复用旧全盘日志模糊匹配认定成功。
+8. **工作树出现.cursor/未跟踪目录**：不是本轮订阅功能生成的已确认文件，不读取/覆盖/删除，不使用git add -A误提交。
+
+### 7）接下来按顺序做
+
+- [ ] 1. 复核新增文件与差异，重点检查真实115响应字段、分页完整性、分享子目录、目标目录验证；只读验证不改媒体。
+- [ ] 2. 使用临时测试数据库启动完整Express服务，验证鉴权与订阅路由、错误状态、SQLite初始化和旧功能兼容。
+- [ ] 3. 重跑22项回归、前后端构建、lint；新增修复必须补测试。必要时检查手机CSS最终构建后布局。
+- [ ] 4. 对“结果待核实/待确认”明确保留限制；若要完善人工核实入口，先设计安全确认，不默认重发。
+- [ ] 5. 显式git add本功能文件/文档/测试，排除.cursor/、临时脚本、数据库、Cookie和任何密钥；提交并推送。
+- [ ] 6. 线上停止/控制写入并做一致性SQLite备份、保留旧镜像与源码归档，准备回滚；不覆盖现有docker-compose及账号设置。
+- [ ] 7. 构建发布，确认订阅路由/四张新表/启动日志/下次Asia/Shanghai 18:00；验证现有搜索转存页面未损坏。
+- [ ] 8. 线上只读验收空订阅页；不要自动创建用户真实关注。真实转存验收需要明确专用订阅与专用目录，或由用户选择第一部影片后验收。
+- [ ] 9. 更新本节状态、提交号和部署验收结论；没有完成的项继续保留未勾选。
+
+### 8）踩过的坑/接手注意
+
+- Windows本地sqlite3缺node_sqlite3.node：最初集成测试无法加载，已通过npm rebuild sqlite3修好；必要时使用本机代理。测试必须设置NODE_ENV=test与临时DATABASE_PATH，不能打开生产数据库跑destroy测试。
+- 曾因字符串替换中$&被当成替换占位符，污染英文标题转义逻辑。现改为callback返回转义字符串，新增特殊字符标题测试，22项重跑通过；不要再用含$&的普通replace字符串批量改代码。
+- 季集匹配曾把“第23集”误当季数，把E01后2160p误当范围，均已修复并回归。仅从明确Season/Sxx/第x季识别季数，不靠配置强行补到所有源文件。
+- 别的作品/季的高集数不能抬高“仅新增”水位；已加作品与季过滤。无发布时间的搜索补充不能当成“关注后新增”。
+- 115长ID必须原样字符串；JSON.parse已经舍入后String无法恢复。新适配器先解析数字token，既有目录选择也接入了同样保护。
+- 分享读取旧版只首20条、目录旧版首50/100条、转存旧版仅fids[0]。追更走独立分页与逐文件适配器，不把整合集重存作为补集。
+- 新Subscription模型导入会进入sequelize.models；旧DatabaseService的sync({alter:true})可能额外改新表。已改为legacy表按模型sync，Subscription四表单独sync；必须做完整冷启动回归。
+- 单元测试和mock浏览器流程不能替代实际115/API验收；OneStrm HTTP成功也不等于生成STRM成功。
+- 不是Codex提醒/自动化任务：每天18:00由项目后端运行，当前尚未部署，不存在已生效的日调度。
+- 单个订阅每轮最多写10集，超出留给下一次检查；每日18:00是开始排队时间，不保证所有订阅18:00同时完成。
+- 进程在18:00停机不补跑整轮，下一日18:00继续；用户可立即检查。持久化排队/在途记录要先核实，不能盲目重发。
+- 首次“仅后续新增”只建基线，不存已有集；用户需要补旧集必须主动选择“补齐缺集”。
+
+### 9）关键文件（全部位于主工程，未提交文件也要保留）
+
+后端：
+- backend/src/subscriptions/rules.ts：分享/时间/季集/身份/去重纯函数。
+- backend/src/subscriptions/drive.ts：115分页遍历与单文件转存。
+- backend/src/subscriptions/models.ts：四表与初始化。
+- backend/src/subscriptions/engine.ts：配置校验、排队、租约、基线、转存与OneStrm通知。
+- backend/src/subscriptions/routes.ts：/subscriptions及用户隔离接口。
+- backend/src/app.ts：挂载路由、初始化表和调度启动。
+- backend/src/services/DatabaseService.ts：避免legacy alter新表。
+- backend/src/services/Cloud115Service.ts：目录选择分页及ID保护。
+- backend/src/services/OneStrmService.ts：校验Webhook响应success。
+- backend/tests/subscriptions.test.cjs：22项隔离测试。
+
+前端：
+- frontend/src/views/Subscriptions.vue：共用PC/手机追更页。
+- frontend/src/api/subscriptions.ts、frontend/src/components/FollowButton.vue。
+- frontend/src/components/Home/ResourceCard.vue、ResourceTable.vue和components/mobile/ResourceCard.vue：关注按钮。
+- frontend/src/components/AsideMenu.vue、views/mobile/Home.vue、router/pc-routes.ts、router/mobile-routes.ts：入口/路由。
+- frontend/tests/subscriptions-preview.cjs：只用模拟数据的预览服务。
+- frontend/src/utils/request.ts：网络异常无response保护。
+
+设计与计划：
+- G:\work\盘搜\docs\superpowers\specs\2026-11-12-subscription-auto-sync-design.md
+- G:\work\盘搜\docs\plans\2026-11-12-subscription-auto-sync.md
+
+后续执行命令（在G:\work\盘搜\cloudsaver-pansou）：
+
+    npm run test:subscriptions
+    npm run build:backend
+    npm run build:frontend
+    npm run lint
+
+**不要清理这些未提交/未跟踪功能文件；不要把本地mock服务或截图当成线上已发布证据。**
+
+---
+
+## 历史记录说明
+
+以下原有章节保留供溯源，部分早期“当前任务”“待实测”状态已过时，当前工作以文首2026-11-12快照为准。
+
+## 1. 历史需求记录（以文首最新快照为准）
 
 | # | 需求 | 状态 |
 |---|------|------|
@@ -329,7 +477,7 @@ app=web&account=<uid>
 
 ---
 
-## 13. 影片订阅追更（2026-11-12，设计阶段）
+## 13. 影片订阅追更（2026-11-12，历史设计阶段；最新状态见文首）
 
 用户已确认：固定分享优先、搜索补充，只补同作品同季的新集，保存到绑定的115目录，再通知OneStrm。
 
