@@ -11,9 +11,30 @@ interface DoubanSubject {
   is_new: boolean;
 }
 
+interface HotListParams {
+  type: string;
+  tag: string;
+  page_limit: string;
+  page_start: string;
+}
+
+// 服务器到豆瓣的线路会间歇卡死：榜单缓存并在失败时沿用旧数据，单次请求短超时后换连接重试。
+const HOT_LIST_FRESH_MS = 30 * 60 * 1000;
+const HOT_LIST_CACHE_LIMIT = 100;
+const HOT_LIST_ATTEMPTS = 3;
+const HOT_LIST_ATTEMPT_TIMEOUT = 8000;
+const POSTER_TIMEOUT = 6000;
+
+const brief = (error: unknown) =>
+  error instanceof Error
+    ? `${(error as NodeJS.ErrnoException).code || ""} ${error.message}`.trim()
+    : String(error);
+
 export class DoubanService {
   private baseUrl: string;
   private api: AxiosInstance;
+  private hotLists = new Map<string, { data: DoubanSubject[]; at: number }>();
+  private pendingHotLists = new Map<string, Promise<DoubanSubject[]>>();
 
   constructor() {
     this.baseUrl = "https://movie.douban.com/j";
@@ -50,36 +71,57 @@ export class DoubanService {
         "/subject_suggest",
         {
           params: { q: keyword },
+          timeout: POSTER_TIMEOUT,
         }
       );
       return response.data?.find((item) => item.pic)?.pic || "";
     } catch (error) {
-      logger.warn(`豆瓣海报搜索失败（${keyword}）:`, error);
+      logger.warn(`豆瓣海报搜索失败（${keyword}）：${brief(error)}`);
       return "";
     }
   }
-  async getHotList(params: {
-    type: string;
-    tag: string;
-    page_limit: string;
-    page_start: string;
-  }): Promise<{ data: DoubanSubject[] }> {
-    try {
-      const response = await this.api.get("/search_subjects", {
-        params: params,
-      });
-      if (response.data && response.data.subjects) {
-        return {
-          data: response.data.subjects,
-        };
-      } else {
-        return {
-          data: [],
-        };
+  async getHotList(params: HotListParams): Promise<{ data: DoubanSubject[] }> {
+    const key = JSON.stringify([params.type, params.tag, params.page_limit, params.page_start]);
+    const cached = this.hotLists.get(key);
+    if (!cached) return { data: await this.refreshHotList(key, params) };
+    if (Date.now() - cached.at > HOT_LIST_FRESH_MS) {
+      this.refreshHotList(key, params).catch(() => undefined);
+    }
+    return { data: cached.data };
+  }
+
+  private refreshHotList(key: string, params: HotListParams): Promise<DoubanSubject[]> {
+    const pending = this.pendingHotLists.get(key);
+    if (pending) return pending;
+    const task = this.fetchHotList(params)
+      .then((data) => {
+        this.hotLists.delete(key);
+        this.hotLists.set(key, { data, at: Date.now() });
+        const oldest = this.hotLists.keys().next().value;
+        if (this.hotLists.size > HOT_LIST_CACHE_LIMIT && oldest !== undefined) {
+          this.hotLists.delete(oldest);
+        }
+        return data;
+      })
+      .finally(() => this.pendingHotLists.delete(key));
+    this.pendingHotLists.set(key, task);
+    return task;
+  }
+
+  private async fetchHotList(params: HotListParams): Promise<DoubanSubject[]> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const response = await this.api.get("/search_subjects", {
+          params,
+          timeout: HOT_LIST_ATTEMPT_TIMEOUT,
+        });
+        return response.data?.subjects || [];
+      } catch (error) {
+        logger.warn(
+          `豆瓣榜单第${attempt}次请求失败（${params.type}/${params.tag}）：${brief(error)}`
+        );
+        if (attempt >= HOT_LIST_ATTEMPTS) throw new Error("豆瓣暂时连不上，请稍后重试");
       }
-    } catch (error) {
-      logger.error("Error fetching hot list:", error);
-      throw error;
     }
   }
 }
