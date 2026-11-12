@@ -1,6 +1,6 @@
 # HANDOFF · 盘搜增强任务交接
 
-> 更新时间：2026-11-12（订阅追更与搜索图片修复已提交并上线）
+> 更新时间：2026-11-12（订阅追更、搜索图片修复、豆瓣榜单超时修复与搜索分组排序均已上线）
 > 工作区：`G:\work\盘搜`  
 > 主工程：`cloudsaver-pansou/`（基于 CloudSaver + PanSou）
 
@@ -37,7 +37,9 @@
 
 **订阅追更与搜索图片修复已提交、推送，并于2026-11-12 08:54Z（北京时间16:54）部署上线；启动日志、四张新表、旧表行数、接口鉴权、白名单外图床图片均已在线上核验。线上目前0条订阅，尚未做真实115转存验收；没有订阅时18:00调度不会转存任何内容。登录后的页面验收待用户确认。**
 
-功能提交：55e70fe（每日115订阅追更）、bb6c697（搜索结果中白名单外图床图片加载失败）、862ba65（图片代理跳转到内网的测试，仅测试代码）。线上镜像由bb6c697构建；服务器源码目录与862ba65一致。
+同日09:41Z（北京时间17:41）第二次上线：豆瓣榜单超时修复，以及搜索分组排序（PanSou · 115网盘在最前，PanSou · 磁力链接在最后），线上已核验，见第5节。
+
+功能提交：55e70fe（每日115订阅追更）、bb6c697（搜索结果中白名单外图床图片加载失败）、862ba65（图片代理跳转到内网的测试，仅测试代码）、4d372ce（豆瓣榜单缓存与卡住重试）、5c7fa71（搜索分组排序）。线上镜像由 5c7fa71 构建。服务器源码目录的内容与 5c7fa71 一致，但从未经发布替换过的旧文件可能仍是 CRLF 换行。
 
 ### 4）已经完成
 
@@ -59,6 +61,12 @@
 - [x] OneStrm：只有明确返回success=false才判通知失败，避免误判已验收的“转存→OneStrm”旧链路。
 - [x] 搜索图片加载失败：图片代理原只允许6个图床，接入PanSou和公开频道后约20个新图床被拒（400）。现保留原白名单，另外只放行本站搜索24小时内返回过的图片地址（内存记录，最多5万条）；这类地址走独立受限客户端：拒绝内网/保留地址（含DNS解析与跳转）、不走全局代理、最多3次跳转、单张≤10MB、只转发按文件头识别的JPEG/PNG/GIF/WebP/AVIF并加nosniff。顺带修复图片地址被多解码一次。前端未改。
 - [x] 数据库路径可用DATABASE_PATH覆盖（默认仍为./data/database.sqlite）；Sequelize不再逐条打印SQL——订阅队列每5秒轮询一次，保留会刷屏docker日志。
+- [x] 豆瓣榜单超时：服务器到豆瓣的线路会间歇卡住（实测约1/6请求无响应，其余1–7秒）。旧代码后端只请求一次、超时30秒，前端16秒就先放弃，提示「网络请求超时或不可达」。改动如下：
+  - 每个榜单缓存30分钟，最多缓存100个榜单；过期后先返回旧数据并在后台刷新，刷新失败就保留旧数据。
+  - 单次请求8秒超时，最多3次；同一榜单的并发请求合并成一次。
+  - 前端榜单请求等待30秒；搜索补海报时查豆瓣最多6秒（原30秒）。
+  - 豆瓣报错日志只记错误原因；旧代码会把含Cookie的请求头写进日志。
+- [x] 搜索分组排序：综合搜索结果的分组顺序，由「磁力、115、TG频道」改为「PanSou · 115网盘、TG频道（原顺序）、PanSou · 磁力链接」。前端默认展开第一组，所以现在默认展开的是115结果。
 
 ### 5）测试结果与证据
 
@@ -66,6 +74,8 @@
 
 - npm run test:subscriptions：**26项通过、0失败**，该命令包含后端tsc。
 - npm run test:images：**7项通过、0失败**（白名单与搜索返回过的地址放行、非默认端口与带凭据地址拒绝、内网直连与跳转拦截、文件头识别）。
+- npm run test:douban：**6项通过、0失败**（卡住后重试并缓存、3次失败给出明确提示、过期后台刷新且失败时保留旧数据、并发合并、缓存上限100、海报查询6秒超时）。
+- npm run test:search：**2项通过、0失败**（115在最前、TG频道顺序不变、磁力在最后；没有115结果时磁力仍在最后）。
 - npm run build:frontend：**通过**（vue-tsc + Vite + PWA生成）。
 - npm run lint：**退出码0，0错误，21条既有warning**。
 - git diff --check：无空白错误（Windows会提示LF/CRLF转换警告，不是构建失败）。
@@ -93,6 +103,33 @@
 - 页面：内置浏览器未登录，没有代用户登录；登录后的搜索图片和空“追更”页需用户确认。
 - 回滚（无需重建）：cd /opt/pansou115 → sudo docker compose stop cloudsaver → sudo docker tag pansou115-cloudsaver:rollback-pre-subscription-20261112-0852 pansou115-cloudsaver:latest → sudo docker compose up -d --no-deps cloudsaver；源码用tgz还原，避免以后重建带上新代码。旧版本不使用四张新表，数据库一般不用还原；只有数据损坏才用备份覆盖（会丢上线后写入的记录，覆盖前先另存当前库）。
 
+线上部署验收（2026-11-12第二次，备份时间戳20261112-0937）：
+
+- 内容：4d372ce（豆瓣榜单）与5c7fa71（搜索分组排序），共替换6个文件。
+  - 替换前逐个核对服务器旧文件与862ba65一致。其中DoubanService.ts、frontend/src/api/douban.ts在服务器上是CRLF换行，内容相同。
+  - 替换后6个文件的md5与提交一致。
+  - docker-compose.yml、数据目录、账号设置未改。
+- 备份：
+  - 回滚镜像pansou115-cloudsaver:rollback-pre-douban-order-20261112-0937，即上一版镜像8a2b9dffeebf。
+  - 源码归档/opt/pansou115/cloudsaver-pansou-src.bak-20261112-0937.tgz。
+  - 停机后复制的数据库data/cloudsaver/data/database.sqlite.bak-20261112-0937。
+  - 上一轮的rollback-pre-subscription-20261112-0852镜像与备份仍保留。
+- 切换：新镜像latest=1dd9d63e1eb6，09:41Z切换，停机约15秒。启动日志正常：数据库初始化成功、订阅调度已启动、服务器启动成功。
+- 接口：首页200；未登录访问/api/search与/api/douban/hot均为401。
+- 数据：8张表的行数与停机备份完全一致，quick_check=ok。启动后库文件变大，是启动时的表维护，不是数据变化。
+- 豆瓣：在容器内用新代码请求了三个榜单。
+  - 热门电影第1次8秒超时，自动重试后成功，共9.5秒拿到20条。
+  - 热门电视剧1.6秒、热门综艺1.2秒，各20条。
+  - 新日志只有错误原因，不含请求头。旧容器连同其中带Cookie的旧日志，已在重建时删除。
+- 排序：新镜像dist/controllers/resource.js中，115组用unshift放到最前，磁力组用push放到最后。登录后的页面需用户确认。
+- 回滚（无需重建）：
+  1. cd /opt/pansou115
+  2. sudo docker compose stop cloudsaver
+  3. sudo docker tag pansou115-cloudsaver:rollback-pre-douban-order-20261112-0937 pansou115-cloudsaver:latest
+  4. sudo docker compose up -d --no-deps cloudsaver
+  5. 源码用20261112-0937的tgz还原。
+  - 这次没有改数据库结构，一般不用还原数据库。
+
 ### 6）当前卡住/尚未闭环
 
 1. **已上线但未做真实转存验收**：线上0条订阅；需要用户选定第一部影片和专用115目录后，再验收增量转存、OneStrm通知和STRM。
@@ -105,6 +142,13 @@
 8. **工作树出现.cursor/未跟踪目录**：不是本轮订阅功能生成的已确认文件，不读取/覆盖/删除，不使用git add -A误提交。
 9. **图片代理限制**：白名单外的图片地址只记在内存，服务重启后，重启前搜到的这类图片要重新搜索才能加载；非默认端口、带账号密码的图片地址不代理；源站404/403/域名失效的图无法修复。
 10. **已知匹配限制**：同一集拆成Part1/Part2时只转第一段；目标目录有E00、特别篇等识别不出集号的文件时，订阅停在“待确认”，不自动写入。
+11. **TG频道「加载更多」是既有问题，尚未修**：
+    - 现象：加载更多时，后端仍会并行搜PanSou；前端按返回的第一组来合并。结果是PanSou第一组被重复追加（排序调整后是115组），TG频道的新一页丢失。
+    - 修法：请求带lastMessageId时，只返回该TG频道的结果。
+12. **豆瓣Cookie写死在代码里（既有问题）**：
+    - backend/src/services/DoubanService.ts的构造函数里有一份豆瓣Cookie，已经在Git历史中。
+    - 仓库若公开，建议先在豆瓣退出登录使它失效，再改为配置项。
+    - 交接文档、日志、回复里都不要复述它的值。
 
 ### 7）接下来按顺序做
 
@@ -132,6 +176,8 @@
 - 单个订阅每轮最多写10集，超出留给下一次检查；每日18:00是开始排队时间，不保证所有订阅18:00同时完成。
 - 进程在18:00停机不补跑整轮，下一日18:00继续；用户可立即检查。持久化排队/在途记录要先核实，不能盲目重发。
 - 首次“仅后续新增”只建基线，不存已有集；用户需要补旧集必须主动选择“补齐缺集”。
+- 服务器源码里从未经发布替换过的旧文件是CRLF换行（最初从Windows工作区上传），按git blob（LF）算的md5会对不上。发布前核对时，要先比较CRLF版本的md5，确认只是换行差异再覆盖。
+- 服务器到豆瓣的线路会间歇卡住。排查豆瓣问题时先看是不是超时，不要直接判断为被封。
 
 ### 9）关键文件（全部位于主工程）
 
@@ -146,8 +192,11 @@
 - backend/src/utils/imageSources.ts：记住搜索返回的图片地址、内网/保留地址判定、受控DNS解析、按文件头识别图片。
 - backend/src/services/ImageService.ts：白名单外图床走独立受限客户端（不走全局代理、最多3次跳转、10MB上限）。
 - backend/src/controllers/teleImages.ts：/tele-images放行规则（白名单优先，其余只放行搜索返回过的地址）。
-- backend/src/controllers/resource.ts：搜索结果返回前记下频道头像与资源图片地址。
+- backend/src/controllers/resource.ts：综合搜索的分组顺序（115最前、TG居中、磁力最后）；返回前记下频道头像与资源图片地址。
 - backend/tests/image-proxy.test.cjs：图片代理7项测试（npm run test:images）。
+- backend/src/services/DoubanService.ts：豆瓣榜单缓存、卡住重试、并发合并；海报查询6秒超时。
+- backend/tests/douban.test.cjs：豆瓣6项测试（npm run test:douban）。
+- backend/tests/search-order.test.cjs：搜索分组排序2项测试（npm run test:search）。
 - backend/src/services/Cloud115Service.ts：目录选择分页及ID保护。
 - backend/src/services/OneStrmService.ts：校验Webhook响应success。
 - backend/tests/subscriptions.test.cjs：26项隔离测试。
@@ -159,6 +208,7 @@
 - frontend/src/components/AsideMenu.vue、views/mobile/Home.vue、router/pc-routes.ts、router/mobile-routes.ts：入口/路由。
 - frontend/tests/subscriptions-preview.cjs：只用模拟数据的预览服务。
 - frontend/src/utils/request.ts：网络异常无response保护。
+- frontend/src/api/douban.ts：榜单请求单独等待30秒（全局为16秒）。
 
 设计与计划：
 - G:\work\盘搜\docs\superpowers\specs\2026-11-12-subscription-auto-sync-design.md
@@ -167,6 +217,9 @@
 后续执行命令（在G:\work\盘搜\cloudsaver-pansou）：
 
     npm run test:subscriptions
+    npm run test:images
+    npm run test:douban
+    npm run test:search
     npm run build:backend
     npm run build:frontend
     npm run lint
