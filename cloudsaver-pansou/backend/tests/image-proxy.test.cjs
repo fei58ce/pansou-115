@@ -81,6 +81,22 @@ test('其他图床拒绝连接内网：IP 直写和域名解析到内网都拦�
  } finally { stop(server); }
 });
 
+test('其他图床跳转到内网同样拦截：跳到内网 IP 或解析到内网的域名都拒绝',async()=>{
+ let fetched=0, hits=0;
+ const target=await serve((req,res)=>{ fetched++; res.setHeader('Content-Type','image/png'); res.end(PNG); });
+ const port=target.address().port;
+ const hops={ '/ip':`http://127.0.0.1:${port}/a.png`, '/v6':`http://[::1]:${port}/a.png`, '/name':`http://localhost:${port}/a.png` };
+ const redirector=await serve((req,res)=>{ hits++; res.statusCode=302; res.setHeader('Location',hops[req.url]); res.end(); });
+ const base=`http://127.0.0.1:${redirector.address().port}`;
+ // 首跳只能指向本机测试服务，所以复制配置绕开首跳检查；跳转后用的仍是同一套 Agent 与 beforeRedirect。
+ const client=axios.create(new ImageService().untrusted.defaults);
+ const blocked=(e)=>{ for (let x=e; x; x=x.cause) if (x.code==='EIMAGEPRIVATE') return true; return false; };
+ try {
+  for (const p of Object.keys(hops)) await assert.rejects(client.get(base+p,{ responseType:'arraybuffer' }),blocked,p);
+  assert.equal(hits,3); assert.equal(fetched,0);
+ } finally { stop(redirector); stop(target); }
+});
+
 test('其他图床只转发真实位图，按文件头给类型，拒绝冒充图片的网页和 SVG',async()=>{
  const bodies={ '/a.png':['image/png',PNG], '/octet':['application/octet-stream',JPEG],
   '/page':['image/png',Buffer.from('<html><script>alert(1)</script></html>')], '/x.svg':['image/svg+xml',Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>')] };
