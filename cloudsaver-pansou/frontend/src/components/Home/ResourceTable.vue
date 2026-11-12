@@ -60,6 +60,7 @@
           </el-table-column>
           <el-table-column label="操作" width="320">
             <template #default="{ row }">
+              <FollowButton :resource="row" />
               <el-button type="primary" plain size="small" @click="handleJump(row)">跳转</el-button>
               <el-button
                 v-if="row.isSupportMagnet"
@@ -107,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import FollowButton from "@/components/FollowButton.vue";
 import { useResourceStore } from "@/stores/resource";
 import type { ResourceItem, TagColor } from "@/types";
 import { getProxyImageUrl } from "@/utils/image";

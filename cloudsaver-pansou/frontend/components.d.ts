@@ -44,6 +44,7 @@ declare module 'vue' {
     ElTag: typeof import('element-plus/es')['ElTag']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     FolderSelect: typeof import('./src/components/Home/FolderSelect.vue')['default']
+    FollowButton: typeof import('./src/components/FollowButton.vue')['default']
     ResourceCard: typeof import('./src/components/Home/ResourceCard.vue')['default']
     ResourceSelect: typeof import('./src/components/Home/ResourceSelect.vue')['default']
     ResourceTable: typeof import('./src/components/Home/ResourceTable.vue')['default']

@@ -58,6 +58,7 @@
 
             <!-- 操作按钮 -->
             <div class="info__action">
+              <FollowButton :resource="item" />
               <van-button type="primary" size="mini" round plain @click="handleJump(item)">
                 跳转
               </van-button>
@@ -95,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import FollowButton from "@/components/FollowButton.vue";
 import { computed, ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import type { ResourceItem } from "@/types";
@@ -124,7 +126,9 @@ const linkStatusText = (status: ResourceItem["linkStatus"]): string => {
   return labels[status || ""] || "";
 };
 
-const linkStatusType = (status: ResourceItem["linkStatus"]): "primary" | "success" | "warning" | "danger" | "default" => {
+const linkStatusType = (
+  status: ResourceItem["linkStatus"]
+): "primary" | "success" | "warning" | "danger" | "default" => {
   if (status === "ok") return "success";
   if (status === "locked") return "warning";
   if (status === "bad") return "danger";

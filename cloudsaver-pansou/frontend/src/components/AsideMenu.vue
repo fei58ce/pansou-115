@@ -90,6 +90,7 @@ const route = useRoute();
 
 // 菜单配置
 const menuList: MenuItem[] = [
+  { index: "subscriptions", title: "我的追更", icon: Star, router: "/subscriptions" },
   {
     index: "1",
     title: "资源搜索",

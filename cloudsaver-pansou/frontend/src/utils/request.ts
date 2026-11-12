@@ -52,14 +52,18 @@ axiosInstance.interceptors.response.use(
     return res;
   },
   (error) => {
-    if (error.response.status === 401) {
+    if (error.response?.status === 401) {
       errorMessage("登录过期，请重新登录");
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       window.location.href = "/login";
       return Promise.reject(new Error("登录过期，请重新登录"));
     }
-    errorMessage(error.response.statusText);
-    return Promise.reject(new Error(error.response.statusText));
+    const message =
+      error.response?.data?.message ||
+      error.response?.statusText ||
+      "网络请求超时或不可达，请稍后刷新核实";
+    errorMessage(message);
+    return Promise.reject(new Error(message));
   }
 );
 

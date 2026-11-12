@@ -8,10 +8,21 @@ import { setupMiddlewares } from "./middleware";
 import routes from "./routes/api";
 import { logger } from "./utils/logger";
 import { errorHandler } from "./middleware/errorHandler";
+import { SubscriptionEngine, defaultCookie, defaultDrive } from "./subscriptions/engine";
+import { initSubscriptionTables } from "./subscriptions/models";
+import { subscriptionRoutes } from "./subscriptions/routes";
+import { PansouSearcher } from "./services/PansouSearcher";
+import { OneStrmService } from "./services/OneStrmService";
 class App {
   private app = express();
   private databaseService = container.get<DatabaseService>(TYPES.DatabaseService);
 
+  private subscriptions = new SubscriptionEngine({
+    drive: defaultDrive,
+    cookie: defaultCookie,
+    search: (title) => container.get<PansouSearcher>(TYPES.PansouSearcher).search(title, "115"),
+    notify: () => container.get<OneStrmService>(TYPES.OneStrmService).triggerConfiguredScan(),
+  });
   constructor() {
     this.setupExpress();
   }
@@ -21,6 +32,7 @@ class App {
     setupMiddlewares(this.app);
 
     // 设置路由
+    this.app.use("/subscriptions", subscriptionRoutes(this.subscriptions));
     this.app.use("/", routes);
     this.app.use(errorHandler);
   }
@@ -29,6 +41,9 @@ class App {
     try {
       // 初始化数据库
       await this.databaseService.initialize();
+      await initSubscriptionTables();
+      this.subscriptions.start();
+      logger.info("订阅调度已启动：每天18:00 Asia/Shanghai；仅处理已启用订阅");
       logger.info("数据库初始化成功");
 
       // 启动服务器

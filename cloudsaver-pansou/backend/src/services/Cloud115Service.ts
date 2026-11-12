@@ -4,17 +4,12 @@ import { ShareInfoResponse, FolderListResponse, SaveFileParams } from "../types/
 import { injectable } from "inversify";
 import { ICloudStorageService } from "@/types/services";
 import { logger } from "../utils/logger";
+import { parse115Json } from "../subscriptions/rules";
 
 interface Cloud115ListItem {
   cid: string;
   n: string;
   s: number;
-}
-
-interface Cloud115FolderItem {
-  cid: string;
-  n: string;
-  ns: number;
 }
 
 @injectable()
@@ -156,40 +151,40 @@ export class Cloud115Service implements ICloudStorageService {
   }
 
   async getFolderList(cookie: string, parentCid = "0"): Promise<FolderListResponse> {
-    const response = await this.api.get("/files", {
-      ...this.withCookie(cookie),
-      params: {
-        aid: 1,
-        cid: parentCid,
-        o: "user_ptime",
-        asc: 1,
-        offset: 0,
-        show_dir: 1,
-        limit: 50,
-        type: 0,
-        format: "json",
-        star: 0,
-        suffix: "",
-        natsort: 0,
-        snap: 0,
-        record_open_time: 1,
-        fc_mix: 0,
-      },
-    });
-    if (response.data?.state) {
-      return {
-        data: response.data.data
-          .filter((item: Cloud115FolderItem) => item.cid && !!item.ns)
-          .map((folder: Cloud115FolderItem) => ({
-            cid: folder.cid,
-            name: folder.n,
-            path: response.data.path,
-          })),
-      };
-    } else {
-      logger.error("获取目录列表失败:", response.data.error);
-      throw new Error("获取115pan目录列表失败:" + response.data.error);
+    const folders: FolderListResponse["data"] = [];
+    const seen = new Set<string>();
+    for (let offset = 0; offset < 5000; ) {
+      const response = await this.api.get("/files", {
+        ...this.withCookie(cookie),
+        transformResponse: [(text: string) => parse115Json(text)],
+        params: {
+          aid: 1,
+          cid: parentCid,
+          o: "file_name",
+          asc: 1,
+          offset,
+          show_dir: 1,
+          limit: 100,
+          fc_mix: 1,
+          format: "json",
+        },
+      });
+      if (!response.data?.state || !Array.isArray(response.data.data))
+        throw new Error("115目录读取失败，请检查授权和目录");
+      const items = response.data.data;
+      if (!items.length) return { data: folders };
+      for (const item of items) {
+        const id = String(item.fid || item.cid);
+        if (seen.has(id)) throw new Error("115目录分页重复，请重试");
+        seen.add(id);
+        if (!item.fid && item.cid)
+          folders.push({ cid: String(item.cid), name: item.n, path: response.data.path });
+      }
+      offset += items.length;
+      if (Number.isFinite(Number(response.data.count)) && offset >= Number(response.data.count))
+        return { data: folders };
     }
+    throw new Error("目录项目超过5000项，请先在115中整理目录");
   }
 
   async saveSharedFile(

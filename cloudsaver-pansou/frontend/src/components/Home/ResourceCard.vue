@@ -174,6 +174,7 @@
                 </div>
 
                 <div class="card-footer">
+                  <FollowButton :resource="resource" />
                   <el-button type="primary" plain @click="handleJump(resource)">跳转</el-button>
                   <el-button
                     v-if="resource.isSupportMagnet"
@@ -212,6 +213,7 @@
 </template>
 
 <script setup lang="ts">
+import FollowButton from "@/components/FollowButton.vue";
 import { useResourceStore } from "@/stores/resource";
 import { ref } from "vue";
 import type { ResourceItem, TagColor } from "@/types";

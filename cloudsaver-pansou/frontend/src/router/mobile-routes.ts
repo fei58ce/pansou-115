@@ -7,6 +7,11 @@ const routes: RouteRecordRaw[] = [
     redirect: "/resource",
     children: [
       {
+        path: "/subscriptions",
+        name: "subscriptions",
+        component: () => import("@/views/Subscriptions.vue"),
+      },
+      {
         path: "/resource",
         name: "resource",
         component: () => import("@/views/mobile/ResourceList.vue"),

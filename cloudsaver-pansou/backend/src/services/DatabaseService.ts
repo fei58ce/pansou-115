@@ -32,7 +32,9 @@ export class DatabaseService {
     try {
       await this.sequelize.query("PRAGMA foreign_keys = OFF");
       await this.cleanupBackupTables();
-      await this.sequelize.sync({ alter: true });
+      for (const [name, model] of Object.entries(this.sequelize.models)) {
+        if (!name.startsWith("Subscription")) await model.sync({ alter: true });
+      }
       await this.sequelize.query("PRAGMA foreign_keys = ON");
       await this.initializeGlobalSettings();
     } catch (error) {

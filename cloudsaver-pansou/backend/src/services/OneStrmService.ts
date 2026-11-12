@@ -66,14 +66,17 @@ export class OneStrmService {
     }
 
     try {
-      await this.api.post(
+      const response = await this.api.post(
         config.baseUrl + "/webhook/quick_scan",
         { paths: [config.path] },
         { params: { token: config.token } }
       );
+      // OneStrm 成功回应的格式不固定；只有明确 success=false 才判失败。
+      if (response.data?.success === false)
+        return { triggered: false, message: "OneStrm拒绝了扫描请求，请检查Token和扫描路径" };
       return { triggered: true, message: "已通知 OneStrm 扫描 " + config.path };
     } catch (error) {
-      logger.warn("通知 OneStrm 扫描失败:", error);
+      logger.warn("通知 OneStrm 扫描失败（未记录认证信息）");
       return { triggered: false, message: "OneStrm 通知失败，请检查地址、Token 和网络" };
     }
   }
