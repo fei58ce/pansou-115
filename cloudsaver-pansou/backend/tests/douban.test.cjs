@@ -67,6 +67,28 @@ test('豆瓣榜单：缓存最多 100 个榜单，超出时先淘汰最早的',a
  assert.equal(count,102);
 });
 
+test('豆瓣预热：依次预取菜单里的 4 个榜单，之后打开直接用缓存',async()=>{
+ const service=new DoubanService();
+ const calls=stub(service,[subjects('a'),subjects('b'),subjects('c'),subjects('d')]);
+ await service.warmUp();
+ assert.deepEqual(calls.map(([,config])=>[config.params.type,config.params.tag]),[['movie','热门'],['tv','热门'],['movie','最新'],['tv','综艺']]);
+ assert.equal((await service.getHotList({ ...params, tag:'综艺' })).data[0].title,'d');
+ assert.equal(calls.length,4);
+});
+
+test('豆瓣预热：没取到的 10 分钟后只重试失败的那几个',async(t)=>{
+ t.mock.timers.enable({ apis:['setTimeout'] });
+ const service=new DoubanService();
+ const calls=stub(service,[subjects('a'),stalled(),stalled(),stalled(),subjects('c'),subjects('d'),subjects('b')]);
+ await service.warmUp();
+ assert.equal(calls.length,6);
+ t.mock.timers.tick(10*60*1000);
+ await new Promise((resolve)=>setImmediate(resolve));
+ assert.equal(calls.length,7);
+ assert.deepEqual([calls[6][1].params.type,calls[6][1].params.tag],['tv','热门']);
+ assert.equal((await service.getHotList(params)).data[0].title,'b');
+});
+
 test('豆瓣补图：单次最多等 6 秒，失败返回空',async()=>{
  const service=new DoubanService();
  const calls=stub(service,[stalled()]);

@@ -25,6 +25,16 @@ const HOT_LIST_CACHE_LIMIT = 100;
 const HOT_LIST_ATTEMPTS = 3;
 const HOT_LIST_ATTEMPT_TIMEOUT = 8000;
 const POSTER_TIMEOUT = 6000;
+// 前端菜单里的榜单：启动后先取一遍，部署或重启后第一个打开豆瓣页的人不用等豆瓣
+const WARMUP_LISTS = [
+  { type: "movie", tag: "热门" },
+  { type: "tv", tag: "热门" },
+  { type: "movie", tag: "最新" },
+  { type: "tv", tag: "综艺" },
+];
+const WARMUP_PAGE_LIMIT = "20";
+const WARMUP_RETRY_MS = 10 * 60 * 1000;
+const WARMUP_ROUNDS = 3;
 
 const brief = (error: unknown) =>
   error instanceof Error
@@ -80,6 +90,26 @@ export class DoubanService {
       return "";
     }
   }
+  /** 依次预取菜单榜单；没取到的过一阵再试，最多试 WARMUP_ROUNDS 轮。 */
+  async warmUp(lists = WARMUP_LISTS, round = 1): Promise<void> {
+    const failed: typeof WARMUP_LISTS = [];
+    for (const list of lists) {
+      try {
+        await this.getHotList({ ...list, page_limit: WARMUP_PAGE_LIMIT, page_start: "0" });
+      } catch {
+        failed.push(list);
+      }
+    }
+    if (!failed.length) {
+      logger.info(`豆瓣榜单预热完成（${lists.length} 个）`);
+    } else if (round < WARMUP_ROUNDS) {
+      logger.warn(
+        `豆瓣榜单预热有 ${failed.length} 个没取到，${WARMUP_RETRY_MS / 60000} 分钟后重试`
+      );
+      setTimeout(() => void this.warmUp(failed, round + 1), WARMUP_RETRY_MS).unref();
+    }
+  }
+
   async getHotList(params: HotListParams): Promise<{ data: DoubanSubject[] }> {
     const key = JSON.stringify([params.type, params.tag, params.page_limit, params.page_start]);
     const cached = this.hotLists.get(key);

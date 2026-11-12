@@ -25,10 +25,21 @@ interface sourceItem {
   ed2k?: string[];
 }
 
+interface ChannelPage {
+  items: sourceItem[];
+  channelLogo: string;
+}
+
+// 同一关键词短时间内重复搜（刷新、翻回、多人同搜）直接用缓存，不再挨个频道请求
+const CHANNEL_PAGE_TTL = 5 * 60 * 1000;
+const CHANNEL_PAGE_CACHE_LIMIT = 300;
+
 @injectable()
 export class Searcher {
   private static instance: Searcher;
   private api: AxiosInstance | null = null;
+  private channelPages = new Map<string, { page: ChannelPage; at: number }>();
+  private pendingChannelPages = new Map<string, Promise<ChannelPage>>();
 
   constructor() {
     this.initAxiosInstance();
@@ -113,67 +124,78 @@ export class Searcher {
   }
 
   async searchAll(keyword: string, channelId?: string, messageId?: string) {
-    const allResults: any[] = [];
-
-    const channelList: any[] = channelId
-      ? config.telegram.channels.filter((channel: any) => channel.id === channelId)
+    const channelList = channelId
+      ? config.telegram.channels.filter((channel) => channel.id === channelId)
       : config.telegram.channels;
 
-    // 使用Promise.all进行并行请求
-    const searchPromises = channelList.map(async (channel) => {
-      try {
+    // 各频道并行请求，结果按频道配置顺序返回，不按谁先响应
+    const groups = await Promise.all(
+      channelList.map(async (channel) => {
         const messageIdparams = messageId ? `before=${messageId}` : "";
         const url = `/${channel.id}${keyword ? `?q=${encodeURIComponent(keyword)}&${messageIdparams}` : `?${messageIdparams}`}`;
         logger.debug(`Searching in channel ${channel.name} with URL: ${url}`);
-        return this.searchInWeb(url).then((results) => {
-          logger.debug(`Found ${results.items.length} items in channel ${channel.name}`);
-          if (results.items.length > 0) {
-            const channelResults = results.items
-              .filter(
-                (item: sourceItem) =>
-                  (item.cloudLinks && item.cloudLinks.length > 0) ||
-                  (item.magnet && item.magnet.length > 0) ||
-                  (item.ed2k && item.ed2k.length > 0)
-              )
-              .map((item: sourceItem) => ({
-                ...item,
-                // 仅有磁力/电驴时，给 cloudType 一个可识别的标签
-                cloudType:
-                  item.cloudType ||
-                  (item.magnet?.length ? "magnet" : item.ed2k?.length ? "ed2k" : ""),
-                cloudLinks: item.cloudLinks?.length
-                  ? item.cloudLinks
-                  : item.magnet?.length
-                    ? item.magnet
-                    : item.ed2k || [],
-                channel: channel.name,
-                channelId: channel.id,
-              }));
+        const results = await this.loadChannelPage(url).catch(() => null);
+        if (!results?.items.length) return null;
+        logger.debug(`Found ${results.items.length} items in channel ${channel.name}`);
+        const channelResults = results.items
+          .filter(
+            (item: sourceItem) =>
+              (item.cloudLinks && item.cloudLinks.length > 0) ||
+              (item.magnet && item.magnet.length > 0) ||
+              (item.ed2k && item.ed2k.length > 0)
+          )
+          .map((item: sourceItem) => ({
+            ...item,
+            // 仅有磁力/电驴时，给 cloudType 一个可识别的标签
+            cloudType:
+              item.cloudType || (item.magnet?.length ? "magnet" : item.ed2k?.length ? "ed2k" : ""),
+            cloudLinks: item.cloudLinks?.length
+              ? item.cloudLinks
+              : item.magnet?.length
+                ? item.magnet
+                : item.ed2k || [],
+            channel: channel.name,
+            channelId: channel.id,
+          }));
 
-            allResults.push({
-              list: channelResults,
-              channelInfo: {
-                ...channel,
-                channelLogo: results.channelLogo,
-              },
-              id: channel.id,
-            });
-          }
-        });
-      } catch (error) {
-        logger.error(`搜索频道 ${channel.name} 失败:`, error);
-      }
-    });
-
-    // 等待所有请求完成
-    await Promise.all(searchPromises);
+        return {
+          list: channelResults,
+          channelInfo: {
+            ...channel,
+            channelLogo: results.channelLogo,
+          },
+          id: channel.id,
+        };
+      })
+    );
 
     return {
-      data: allResults,
+      data: groups.filter((group): group is NonNullable<typeof group> => group !== null),
     };
   }
 
-  async searchInWeb(url: string) {
+  /** 同一频道页（频道 + 关键词 + 翻页位置）短时间内只请求一次；请求失败不缓存。 */
+  private loadChannelPage(url: string): Promise<ChannelPage> {
+    const hit = this.channelPages.get(url);
+    if (hit && Date.now() - hit.at < CHANNEL_PAGE_TTL) return Promise.resolve(hit.page);
+    const pending = this.pendingChannelPages.get(url);
+    if (pending) return pending;
+    const task = this.fetchChannelPage(url)
+      .then((page) => {
+        this.channelPages.delete(url);
+        this.channelPages.set(url, { page, at: Date.now() });
+        for (const key of this.channelPages.keys()) {
+          if (this.channelPages.size <= CHANNEL_PAGE_CACHE_LIMIT) break;
+          this.channelPages.delete(key);
+        }
+        return page;
+      })
+      .finally(() => this.pendingChannelPages.delete(url));
+    this.pendingChannelPages.set(url, task);
+    return task;
+  }
+
+  private async fetchChannelPage(url: string): Promise<ChannelPage> {
     try {
       if (!this.api) {
         throw new Error("Axios instance is not initialized");
@@ -265,10 +287,7 @@ export class Searcher {
       return { items: items, channelLogo };
     } catch (error) {
       logger.error(`搜索错误: ${url}`, error);
-      return {
-        items: [],
-        channelLogo: "",
-      };
+      throw error;
     }
   }
 }

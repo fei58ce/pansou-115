@@ -29,6 +29,8 @@ interface PansouSearchResponse {
   };
 }
 
+type LinkState = "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+
 interface SearchItem {
   id: string;
   title: string;
@@ -43,7 +45,7 @@ interface SearchItem {
   image: string;
   magnet?: string[];
   ed2k?: string[];
-  linkStatus?: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+  linkStatus?: LinkState;
   linkStatusMessage?: string;
 }
 
@@ -51,7 +53,7 @@ interface PansouCheckResult {
   disk_type: string;
   url: string;
   normalized_url?: string;
-  state: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
+  state: LinkState;
   summary?: string;
 }
 
@@ -65,14 +67,24 @@ const POSTER_CACHE_LIMIT = 2000;
 const POSTER_HIT_TTL = 24 * 60 * 60 * 1000;
 // 没查到海报的标题过一阵再查，TMDB/豆瓣可能只是当时没连上
 const POSTER_MISS_TTL = 30 * 60 * 1000;
-// 线上 115 探活偶尔要十几秒，超时就过滤不了坏链
-const LINK_CHECK_TIMEOUT = 30000;
+// 线上 115 探活偶尔要十几秒：搜索最多等 30 秒，没探完的在后台继续并写进缓存，下次搜到同一链接直接用
+const LINK_CHECK_WAIT_MS = 30000;
+const LINK_CHECK_TIMEOUT = 60000;
+// 坏链基本不会复活，存久一点；正常/加密的链接随时可能失效，存短一点；探不出结果的不存
+const LINK_STATUS_TTL: Partial<Record<LinkState, number>> = {
+  bad: 12 * 60 * 60 * 1000,
+  unsupported: 12 * 60 * 60 * 1000,
+  ok: 60 * 60 * 1000,
+  locked: 60 * 60 * 1000,
+};
+const LINK_STATUS_CACHE_LIMIT = 5000;
 
 @injectable()
 export class PansouSearcher {
   private api: AxiosInstance;
   private posterCache = new Map<string, { poster: string; at: number }>();
   private pendingPosters = new Map<string, Promise<string>>();
+  private linkStatusCache = new Map<string, { state: LinkState; summary: string; at: number }>();
 
   constructor(
     @inject(TYPES.TmdbService) private tmdbService: TmdbService,
@@ -216,32 +228,86 @@ export class PansouSearcher {
       .trim();
   }
 
-  /** 批量探活 115 链接并写回 linkStatus；探活失败或超时就不标状态，结果照常保留。 */
+  /**
+   * 批量探活 115 链接并写回 linkStatus：缓存里有的直接用，只把没缓存的发给 PanSou。
+   * 探活失败或超时就不标状态，结果照常保留。
+   */
   private async checkLinkStatus(items: SearchItem[], cloudType: string): Promise<void> {
     if (!items.length) return;
+    const fresh = new Map<string, PansouCheckResult>();
+    const unchecked = [
+      ...new Set(
+        items.map((item) => item.cloudLinks[0]).filter((url) => url && !this.cachedLinkStatus(url))
+      ),
+    ];
+    if (unchecked.length) {
+      let timer: NodeJS.Timeout | undefined;
+      const finished = await Promise.race([
+        this.requestLinkStatus(unchecked, cloudType).then((results) => {
+          for (const result of results) fresh.set(result.url, result);
+          return true;
+        }),
+        new Promise<false>((resolve) => {
+          timer = setTimeout(() => resolve(false), LINK_CHECK_WAIT_MS);
+        }),
+      ]);
+      clearTimeout(timer);
+      if (!finished) {
+        logger.info(`115 探活超过 ${LINK_CHECK_WAIT_MS / 1000} 秒，先返回结果，探完的写进缓存`);
+      }
+    }
+    for (const item of items) {
+      const status = fresh.get(item.cloudLinks[0]) || this.cachedLinkStatus(item.cloudLinks[0]);
+      if (status) {
+        item.linkStatus = status.state;
+        item.linkStatusMessage = status.summary || "";
+      }
+    }
+  }
+
+  /** 发给 PanSou 探活，能缓存的结果写进缓存；失败只记日志。 */
+  private async requestLinkStatus(urls: string[], cloudType: string): Promise<PansouCheckResult[]> {
     try {
       const response = await this.api.post<PansouCheckResponse>(
         "/api/check/links",
         {
-          items: items.map((item) => ({
+          items: urls.map((url) => ({
             disk_type: cloudType,
-            url: item.cloudLinks[0],
-            password: this.extractPassword(item.cloudLinks[0]),
+            url,
+            password: this.extractPassword(url),
           })),
         },
         { timeout: LINK_CHECK_TIMEOUT }
       );
-      const resultMap = new Map((response.data?.results || []).map((item) => [item.url, item]));
-      for (const item of items) {
-        const result = resultMap.get(item.cloudLinks[0]);
-        if (result) {
-          item.linkStatus = result.state;
-          item.linkStatusMessage = result.summary || "";
-        }
+      const results = response.data?.results || [];
+      const at = Date.now();
+      for (const result of results) {
+        if (!LINK_STATUS_TTL[result.state]) continue;
+        this.linkStatusCache.delete(result.url);
+        this.linkStatusCache.set(result.url, {
+          state: result.state,
+          summary: result.summary || "",
+          at,
+        });
       }
+      for (const url of this.linkStatusCache.keys()) {
+        if (this.linkStatusCache.size <= LINK_STATUS_CACHE_LIMIT) break;
+        this.linkStatusCache.delete(url);
+      }
+      return results;
     } catch (error) {
       logger.warn("115 链接探活失败，保留原始搜索结果:", error);
+      return [];
     }
+  }
+
+  private cachedLinkStatus(url: string) {
+    const hit = this.linkStatusCache.get(url);
+    if (hit && Date.now() - hit.at > (LINK_STATUS_TTL[hit.state] || 0)) {
+      this.linkStatusCache.delete(url);
+      return undefined;
+    }
+    return hit;
   }
 
   private extractPassword(url: string): string {

@@ -13,6 +13,7 @@ import { initSubscriptionTables } from "./subscriptions/models";
 import { subscriptionRoutes } from "./subscriptions/routes";
 import { PansouSearcher } from "./services/PansouSearcher";
 import { OneStrmService } from "./services/OneStrmService";
+import { DoubanService } from "./services/DoubanService";
 class App {
   private app = express();
   private databaseService = container.get<DatabaseService>(TYPES.DatabaseService);
@@ -54,6 +55,7 @@ class App {
 🌍 监听端口: ${port}
 🔧 运行环境: ${process.env.NODE_ENV || "development"}
         `);
+        void container.get<DoubanService>(TYPES.DoubanService).warmUp();
       });
     } catch (error) {
       logger.error("服务器启动失败:", error);
