@@ -1,48 +1,55 @@
 <template>
   <div class="mobile-page douban">
-    <!-- 加载状态 -->
-    <div v-if="doubanStore.loading" class="douban__loading">
-      <van-loading type="spinner" size="24px" vertical>加载中...</van-loading>
+    <!-- 榜单切换 -->
+    <div class="douban__tabs">
+      <span
+        v-for="category in DOUBAN_CATEGORIES"
+        :key="category.label"
+        class="tabs__item"
+        :class="{ 'is-active': category === currentCategory }"
+        @click="switchCategory(category)"
+      >
+        {{ category.label }}
+      </span>
+    </div>
+    <p class="douban__hint">点海报搜索资源，点片名打开豆瓣</p>
+
+    <!-- 加载中：骨架屏 -->
+    <div v-if="doubanStore.loading && !doubanStore.hotList.length" class="douban__grid">
+      <div v-for="n in 9" :key="n" class="douban__item">
+        <div class="douban__poster sk" />
+        <div class="sk sk--line" />
+      </div>
     </div>
 
     <!-- 电影列表 -->
-    <div v-else class="douban__grid">
+    <div
+      v-else-if="doubanStore.hotList.length"
+      class="douban__grid"
+      :class="{ 'is-refreshing': doubanStore.loading }"
+    >
       <div v-for="movie in doubanStore.hotList" :key="movie.id" class="douban__item">
-        <!-- 海报卡片 -->
-        <div class="douban__poster">
+        <div class="douban__poster" @click="searchMovie(movie.title)">
           <van-image
             class="poster__img"
             :src="getProxyImageUrl(movie.cover)"
             fit="cover"
-            lazy
-            loading="skeleton"
+            lazy-load
             :alt="movie.title"
-            @click="previewImage(movie.cover)"
           />
-          <!-- 评分标签 -->
-          <van-tag
-            class="poster__rate"
-            type="primary"
-            :style="{ backgroundColor: getRateColor(movie.rate) }"
-          >
+          <span v-if="Number(movie.rate)" class="poster__rate" :class="rateClass(movie.rate)">
             {{ movie.rate }}
-          </van-tag>
-          <!-- 搜索按钮 -->
-          <div class="poster__action" @click.stop="searchMovie(movie.title)">
-            <van-icon name="search" size="24" />
-          </div>
+          </span>
+          <span class="poster__search"><van-icon name="search" /></span>
         </div>
-        <!-- 电影信息 -->
-        <div class="douban__info">
-          <van-button class="info__title" type="default" :url="movie.url" text="text" block>
-            {{ movie.title }}
-          </van-button>
-        </div>
+        <a :href="movie.url" target="_blank" rel="noopener noreferrer" class="douban__title">
+          {{ movie.title }}
+        </a>
       </div>
     </div>
 
     <!-- 空状态 -->
-    <van-empty v-if="!doubanStore.loading && !doubanStore.hotList.length" description="暂无数据" />
+    <van-empty v-else description="豆瓣榜单暂时没取到，稍后再试" />
   </div>
 </template>
 
@@ -50,32 +57,33 @@
 import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDoubanStore } from "@/stores/douban";
-import { showImagePreview } from "vant";
 import { getProxyImageUrl } from "@/utils/image";
-
-interface CurrentParams {
-  type: string;
-  tag?: string;
-}
+import { DOUBAN_CATEGORIES, findDoubanCategory, type DoubanCategory } from "@/constants/douban";
 
 // 路由相关
 const router = useRouter();
 const route = useRoute();
-const routeParams = computed((): CurrentParams => ({ ...route.query }) as unknown as CurrentParams);
 
 // 状态管理
 const doubanStore = useDoubanStore();
 
-// 监听路由参数变化
+const currentCategory = computed(() =>
+  findDoubanCategory(route.query.type as string, route.query.tag as string)
+);
+
+// 离开页面（比如点海报去搜索）时路由参数也会变，那时不要再去取榜单
 watch(
-  () => routeParams.value,
-  (params) => {
-    if (params) {
-      doubanStore.setCurrentParams(params);
-    }
+  currentCategory,
+  (category) => {
+    if (route.path !== "/douban") return;
+    doubanStore.setCurrentParams({ type: category.type, tag: category.tag });
   },
   { immediate: true }
 );
+
+const switchCategory = (category: DoubanCategory) => {
+  router.replace({ path: "/douban", query: category.query });
+};
 
 // 方法定义
 const searchMovie = (title: string) => {
@@ -85,134 +93,156 @@ const searchMovie = (title: string) => {
   });
 };
 
-const previewImage = (url: string) => {
-  showImagePreview({
-    images: [getProxyImageUrl(url)],
-    closeable: true,
-  });
-};
-
-// 根据评分获取颜色
-const getRateColor = (rate: string | number) => {
-  const numRate = Number(rate);
-  if (numRate >= 8) return "#42b883";
-  if (numRate >= 6) return "#5853fa";
-  return "#f56c6c";
+const rateClass = (rate: string | number) => {
+  const value = Number(rate);
+  if (value >= 8) return "is-high";
+  if (value >= 6) return "is-mid";
+  return "is-low";
 };
 </script>
 
 <style lang="scss" scoped>
 .douban {
-  // 网格布局 - 修改为两列
+  padding-bottom: 12px;
+
+  &__tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 12px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tabs__item {
+      flex: none;
+      padding: 6px 14px;
+      border-radius: 16px;
+      background: var(--surface-raised);
+      color: var(--text-secondary);
+      font-size: 13px;
+      box-shadow: var(--shadow-1);
+
+      &.is-active {
+        background: var(--primary-500);
+        color: #fff;
+        font-weight: 500;
+      }
+    }
+  }
+
+  &__hint {
+    margin: 8px 14px 10px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+  }
+
   &__grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-base);
-    padding: var(--spacing-base);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 10px;
+    padding: 0 12px;
+    transition: opacity 0.2s ease;
+
+    &.is-refreshing {
+      opacity: 0.6;
+    }
   }
 
-  // 电影项
   &__item {
-    background: var(--theme-other_background);
-    border-radius: var(--border-radius-lg);
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    min-width: 0;
   }
 
-  // 海报区域
   &__poster {
     position: relative;
-    aspect-ratio: 2/3;
-    background: #f5f5f5;
+    aspect-ratio: 2 / 3;
     overflow: hidden;
+    border-radius: 8px;
+    background: var(--grey-200);
+    box-shadow: var(--shadow-1);
 
     .poster__img {
+      display: block;
       width: 100%;
       height: 100%;
-      transition: transform 0.3s ease;
-
-      &:active {
-        transform: scale(1.05);
-      }
     }
 
     .poster__rate {
       position: absolute;
-      top: var(--spacing-xs);
-      right: var(--spacing-xs);
-      font-size: 13px;
-      font-weight: 500;
-      padding: 2px 6px;
-      border-radius: var(--border-radius-lg);
+      top: 6px;
+      right: 6px;
+      padding: 0 5px;
+      border-radius: 4px;
+      background: var(--grey-600);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 18px;
+
+      &.is-high {
+        background: var(--green-500);
+      }
+
+      &.is-mid {
+        background: var(--amber-500);
+      }
     }
 
-    .poster__action {
+    .poster__search {
       position: absolute;
-      inset: 0;
+      right: 6px;
+      bottom: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.6);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      color: #fff;
-
-      &:active {
-        opacity: 1;
-      }
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: hsla(0, 0%, 100%, 0.92);
+      color: var(--primary-600);
+      font-size: 13px;
     }
   }
 
-  // 信息区域
-  &__info {
-    padding: 6px 8px;
-
-    .info__title {
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.4;
-      color: var(--theme-color);
-      text-align: left;
-      border: none;
-
-      &:active {
-        color: var(--theme-theme);
-      }
-    }
-  }
-
-  // 加载状态
-  &__loading {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-background);
-    z-index: 1;
-
-    :deep(.van-loading) {
-      padding: 16px 24px;
-      background: rgba(0, 0, 0, 0.7);
-      border-radius: 8px;
-      color: #fff;
-    }
+  &__title {
+    display: block;
+    margin-top: 6px;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-// 深度修改 Vant 组件样式
-:deep(.van-image) {
-  display: block;
-  background: #f5f5f5;
+.sk {
+  background: linear-gradient(90deg, var(--grey-100) 25%, var(--grey-200) 37%, var(--grey-100) 63%);
+  background-size: 400% 100%;
+  animation: m-shimmer 1.4s ease infinite;
+  box-shadow: none;
+
+  &--line {
+    width: 70%;
+    height: 13px;
+    margin-top: 6px;
+    border-radius: 4px;
+  }
 }
 
-:deep(.van-tag--primary) {
-  border: none;
+@keyframes m-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
 }
 
-:deep(.van-button) {
-  height: auto;
-  padding: var(--spacing-xs) 0;
-  border: none;
+:deep(.van-image__img) {
+  object-fit: cover;
 }
 </style>

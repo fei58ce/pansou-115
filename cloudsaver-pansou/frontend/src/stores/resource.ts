@@ -24,6 +24,22 @@ const lastResource = (
     : { list: [] }
 ) as StorageListObject;
 
+const RECENT_KEYWORDS_KEY = "recent_keywords";
+const RECENT_KEYWORDS_LIMIT = 8;
+
+const loadRecentKeywords = (): string[] => {
+  try {
+    const list: unknown = JSON.parse(localStorage.getItem(RECENT_KEYWORDS_KEY) || "[]");
+    return Array.isArray(list)
+      ? list
+          .filter((item): item is string => typeof item === "string")
+          .slice(0, RECENT_KEYWORDS_LIMIT)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
 // 定义云盘驱动配置类型
 interface CloudDriveConfig {
   name: string;
@@ -97,6 +113,7 @@ export const useResourceStore = defineStore("resource", {
       ed2k: "info",
     },
     keyword: "",
+    recentKeywords: loadRecentKeywords(),
     resources: lastResource.list,
     lastUpdateTime: lastResource.lastUpdateTime || "",
     shareInfo: {} as ShareInfoResponse,
@@ -109,6 +126,21 @@ export const useResourceStore = defineStore("resource", {
   actions: {
     setLoadTree(loadTree: boolean) {
       this.loadTree = loadTree;
+    },
+
+    rememberKeyword(keyword: string) {
+      const word = keyword.trim();
+      if (!word) return;
+      this.recentKeywords = [word, ...this.recentKeywords.filter((item) => item !== word)].slice(
+        0,
+        RECENT_KEYWORDS_LIMIT
+      );
+      localStorage.setItem(RECENT_KEYWORDS_KEY, JSON.stringify(this.recentKeywords));
+    },
+
+    clearRecentKeywords() {
+      this.recentKeywords = [];
+      localStorage.removeItem(RECENT_KEYWORDS_KEY);
     },
 
     /**
@@ -127,12 +159,20 @@ export const useResourceStore = defineStore("resource", {
 
     // 搜索资源
     async searchResources(keyword?: string, isLoadMore = false, channelId?: string): Promise<void> {
-      this.loading = true;
-      if (!isLoadMore) this.resources = [];
+      // 加载更多只让对应分组显示加载中，不挡住整个页面
+      const group = isLoadMore ? this.resources.find((x) => x.id === channelId) : undefined;
+      if (group?.loading) return;
+      if (group) group.loading = true;
+      if (!isLoadMore) {
+        this.loading = true;
+        this.resources = [];
+        this.keyword = keyword || "";
+        if (keyword) this.rememberKeyword(keyword);
+      }
       try {
         let lastMessageId = "";
         if (isLoadMore) {
-          const list = this.resources.find((x) => x.id === channelId)?.list || [];
+          const list = group?.list || [];
           const last = list[list.length - 1];
           lastMessageId = last?.messageId || "";
           if (last?.isLastMessage) {
@@ -204,7 +244,8 @@ export const useResourceStore = defineStore("resource", {
         console.log(error);
         this.handleError("搜索失败，请重试", null);
       } finally {
-        this.loading = false;
+        if (group) group.loading = false;
+        if (!isLoadMore) this.loading = false;
       }
     },
 

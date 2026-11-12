@@ -4,17 +4,15 @@
     <div class="pc-search__input">
       <el-input
         v-model="keyword"
-        placeholder="请输入搜索关键词或输入链接直接解析"
+        placeholder="输入片名搜索，或粘贴 115 / 夸克分享链接直接解析"
         clearable
         @keyup.enter="handleSearch"
       >
         <template #prefix>
           <el-icon><Search /></el-icon>
         </template>
-        <template #suffix>
-          <el-icon v-if="keyword" class="search-icon" @click="handleSearch">
-            <ArrowRight />
-          </el-icon>
+        <template #append>
+          <el-button :loading="resourcStore.loading" @click="handleSearch">搜索</el-button>
         </template>
       </el-input>
     </div>
@@ -22,9 +20,9 @@
     <!-- 用户操作区 -->
     <div class="pc-search__actions">
       <el-tooltip effect="dark" content="退出登录" placement="bottom">
-        <el-button class="logout-btn" type="text" @click="handleLogout">
+        <button class="logout-btn" type="button" aria-label="退出登录" @click="handleLogout">
           <el-icon><SwitchButton /></el-icon>
-        </el-button>
+        </button>
       </el-tooltip>
     </div>
   </div>
@@ -35,7 +33,7 @@ import { ref, computed, watch } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { Search, ArrowRight, SwitchButton } from "@element-plus/icons-vue";
+import { Search, SwitchButton } from "@element-plus/icons-vue";
 import { STORAGE_KEYS } from "@/constants/storage";
 
 // 路由相关
@@ -44,7 +42,7 @@ const router = useRouter();
 const resourcStore = useResourceStore();
 
 // 响应式数据
-const keyword = ref("");
+const keyword = ref(resourcStore.keyword);
 const routeKeyword = computed(() => route.query.keyword as string);
 
 // 退出登录
@@ -54,12 +52,16 @@ const handleLogout = () => {
   ElMessage.success("已退出登录");
 };
 
-// 搜索处理
+// 搜索处理：先切到搜索页，结果和加载状态都在那里显示
 const handleSearch = async () => {
   const searchText = keyword.value.trim();
   if (!searchText) {
     ElMessage.warning("请输入搜索内容");
     return;
+  }
+
+  if (route.path !== "/resource") {
+    await router.push("/resource");
   }
 
   // 链接解析处理
@@ -70,9 +72,6 @@ const handleSearch = async () => {
 
   // 关键词搜索
   await resourcStore.searchResources(searchText);
-  if (route.path !== "/resource") {
-    router.push("/resource");
-  }
 };
 
 // 监听路由参数变化
@@ -96,108 +95,100 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-@import "@/styles/common.scss";
-
 .pc-search {
-  @include flex-center;
-  justify-content: space-between;
-  gap: 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
   width: 100%;
 
-  // 搜索输入区域
   &__input {
     flex: 1;
-    min-width: 0; // 防止溢出
+    min-width: 0;
+    max-width: 760px;
 
     :deep(.el-input) {
-      --el-input-height: 44px;
+      --el-input-height: 40px;
+      font-size: var(--text-base);
+    }
 
-      .el-input__wrapper {
-        @include glass-effect;
-        padding: 0 16px;
-        border-radius: var(--theme-radius);
+    :deep(.el-input__wrapper) {
+      padding: 0 var(--space-3);
+      border-radius: var(--radius) 0 0 var(--radius);
+      background: var(--grey-100);
+      box-shadow: 0 0 0 1px transparent inset;
+      transition: var(--theme-transition);
+
+      &:hover {
+        box-shadow: 0 0 0 1px var(--border-strong) inset;
+      }
+
+      &.is-focus {
+        background: var(--surface-raised);
         box-shadow:
-          inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-          0 2px 4px rgba(0, 0, 0, 0.05),
-          0 1px 2px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        transition: var(--theme-transition);
-        background: rgba(255, 255, 255, 0.9);
+          0 0 0 1px var(--primary-500) inset,
+          var(--focus-ring);
+      }
+    }
+
+    :deep(.el-input__prefix .el-icon) {
+      font-size: 16px;
+      color: var(--text-tertiary);
+    }
+
+    :deep(.el-input-group__append) {
+      padding: 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      background: var(--primary-500);
+      box-shadow: none;
+      overflow: hidden;
+
+      .el-button {
+        height: 40px;
+        margin: 0;
+        padding: 0 var(--space-5);
+        color: #fff;
+        font-weight: var(--weight-medium);
+        border: none;
+        border-radius: 0;
+        background: transparent;
 
         &:hover {
-          border-color: var(--theme-primary);
-          box-shadow:
-            inset 0 0 0 1px var(--theme-primary),
-            0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        &.is-focus {
-          border-color: var(--theme-primary);
-          box-shadow:
-            inset 0 0 0 1px var(--theme-primary),
-            0 4px 8px rgba(0, 0, 0, 0.1),
-            0 0 0 3px rgba(0, 102, 204, 0.1);
-          background: #fff;
-        }
-      }
-
-      .el-input__inner {
-        font-size: 15px;
-        color: var(--theme-text-primary);
-        height: 42px;
-        line-height: 42px;
-
-        &::placeholder {
-          color: var(--theme-text-secondary);
-        }
-      }
-
-      .el-input__prefix-inner {
-        .el-icon {
-          font-size: 18px;
-          color: var(--theme-text-secondary);
-          margin-right: 8px;
-        }
-      }
-
-      .search-icon {
-        font-size: 18px;
-        cursor: pointer;
-        color: var(--theme-primary);
-        transition: var(--theme-transition);
-        margin-left: 8px;
-
-        &:hover {
-          transform: scale(1.1);
+          background: var(--primary-600);
         }
       }
     }
   }
 
-  // 操作区域
   &__actions {
+    margin-left: auto;
+
     .logout-btn {
-      @include glass-effect;
-      width: 44px;
-      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
       padding: 0;
-      border-radius: var(--theme-radius);
+      color: var(--text-tertiary);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
       transition: var(--theme-transition);
 
       .el-icon {
-        font-size: 20px;
-        color: var(--theme-text-regular);
-        transition: var(--theme-transition);
+        font-size: 16px;
       }
 
       &:hover {
-        background: var(--theme-primary);
-        transform: translateY(-2px);
-        box-shadow: var(--theme-shadow-sm);
+        color: var(--red-500);
+        border-color: var(--red-100);
+        background: var(--red-100);
+      }
 
-        .el-icon {
-          color: #fff;
-        }
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
       }
     }
   }

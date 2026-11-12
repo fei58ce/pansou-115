@@ -7,15 +7,11 @@
           v-model="searchForm.keyword"
           class="header__search"
           shape="round"
-          placeholder="请输入搜索关键词或输入链接直接解析"
+          placeholder="搜片名，或粘贴分享链接"
           @search="handleSearch"
         />
 
-        <van-icon
-          name="https://b.yzcdn.cn/vant/icon-demo-1126.png"
-          class="header__action"
-          @click="handleLogout"
-        />
+        <van-icon name="user-circle-o" class="header__action" @click="handleLogout" />
       </div>
     </header>
 
@@ -31,17 +27,12 @@
     <!-- 底部导航栏 -->
     <van-tabbar class="home__tabbar" route>
       <van-tabbar-item to="/resource" icon="search">搜索</van-tabbar-item>
-      <van-tabbar-item to="/douban" icon="video">豆瓣</van-tabbar-item>
+      <van-tabbar-item to="/douban" icon="video-o">豆瓣</van-tabbar-item>
       <van-tabbar-item to="/tmdb" icon="star-o">TMDB</van-tabbar-item>
-      <van-tabbar-item to="/subscriptions" icon="like-o">追更</van-tabbar-item>
+      <van-tabbar-item to="/subscriptions" icon="bookmark-o">追更</van-tabbar-item>
       <van-tabbar-item to="/lixian" icon="todo-list-o">离线</van-tabbar-item>
       <van-tabbar-item to="/setting" icon="setting-o">设置</van-tabbar-item>
     </van-tabbar>
-
-    <!-- 全局加载状态 -->
-    <van-overlay :show="resourceStore.loading" class="home__loading" @touchmove.prevent>
-      <van-loading type="spinner" color="#fff" size="24px"> 资源搜索中... </van-loading>
-    </van-overlay>
 
     <!-- 返回顶部 -->
     <van-back-top right="30px" bottom="100px" />
@@ -95,19 +86,20 @@ watch(
   }
 );
 
-// 方法定义
+// 方法定义：先切到搜索页，结果和加载状态都在那里显示
 const handleSearch = async () => {
   const keyword = searchForm.value.keyword.trim();
   if (!keyword) return;
+
+  if (route.path !== "/resource") {
+    await router.push("/resource");
+  }
 
   if (keyword.startsWith("http")) {
     await resourceStore.parsingCloudLink(keyword);
     return;
   }
 
-  if (route.path !== "/resource") {
-    await router.push("/resource");
-  }
   await resourceStore.searchResources(keyword);
 };
 
@@ -124,64 +116,50 @@ const handleLogout = () => {
 
 <style lang="scss" scoped>
 .home {
-  // 布局
   min-height: 100vh;
-  background: var(--theme-background);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
 
-  // 头部搜索
   &__header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    background: var(--theme-other_background);
-    backdrop-filter: blur(8px);
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+    background: var(--surface-raised);
+    box-shadow: 0 1px 0 var(--border);
 
     .header__wrapper {
       display: flex;
       align-items: center;
-      padding: 8px;
+      padding: 8px 8px 8px 4px;
     }
 
     .header__search {
       flex: 1;
-      padding: 0;
+      padding: 0 4px;
       background: transparent;
     }
 
     .header__action {
-      padding: 8px;
-      margin-left: 4px;
-      color: var(--theme-color);
+      padding: 6px;
+      color: var(--text-secondary);
       font-size: 24px;
-      cursor: pointer;
       line-height: 1;
 
       &:active {
-        color: var(--theme-theme);
+        color: var(--primary-500);
       }
     }
   }
 
-  // 主内容区 - 调整顶部间距
+  // 顶部留出搜索栏高度，底部留出 tabbar 和安全区域
   &__content {
-    padding-top: 64px; // 搜索框高度(48px) + 上下padding(8px * 2)
-    padding-bottom: 100px; // tabbar高度 + 底部安全区域
+    padding-top: 58px;
+    padding-bottom: 100px;
     box-sizing: border-box;
     flex: 1;
-  }
-
-  // 加载状态
-  &__loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #fff;
   }
 }
 
@@ -196,18 +174,16 @@ const handleLogout = () => {
   opacity: 0;
 }
 
-// 深度修改 Vant 组件样式
 :deep(.van-tabbar) {
-  background: var(--theme-other_background);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border);
 }
 
 :deep(.van-tabbar-item) {
-  color: var(--theme-color);
+  color: var(--text-tertiary);
 }
 
 :deep(.van-tabbar-item--active) {
-  color: var(--theme-theme);
+  color: var(--primary-500);
 }
 </style>

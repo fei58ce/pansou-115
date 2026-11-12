@@ -1,60 +1,82 @@
 <template>
   <div class="pc-resources">
-    <!-- 头部工具栏 -->
-    <div class="pc-resources__header">
-      <div class="header__left">
-        <el-tooltip effect="dark" content="点击获取最新资源" placement="bottom">
-          <el-button class="refresh-btn" type="text" @click="refreshResources">
-            <el-icon><Refresh /></el-icon>
-            <span>最新资源</span>
-            <span class="update-time"> (上次刷新时间：{{ resourceStore.lastUpdateTime }}) </span>
-          </el-button>
-        </el-tooltip>
+    <!-- 结果概览和视图切换 -->
+    <div v-if="hasResults && !resourceStore.loading" class="pc-resources__toolbar">
+      <div class="toolbar__summary">
+        <template v-if="resourceStore.keyword">
+          <h2 class="summary__title">「{{ resourceStore.keyword }}」的搜索结果</h2>
+          <span class="summary__meta">
+            {{ resourceStore.resources.length }} 个来源 · 共 {{ totalCount }} 条
+          </span>
+        </template>
+        <template v-else>
+          <h2 class="summary__title">最新资源</h2>
+          <span v-if="resourceStore.lastUpdateTime" class="summary__meta">
+            更新于 {{ resourceStore.lastUpdateTime }}
+          </span>
+          <el-button text size="small" :icon="Refresh" @click="refreshResources">刷新</el-button>
+        </template>
       </div>
 
-      <div class="header__right">
+      <div class="toolbar__actions">
         <el-tooltip
           effect="dark"
           :content="
-            userStore.imagesSource === 'local' ? '图片切换到代理模式' : '图片切换到直连模式'
+            userStore.imagesSource === 'proxy'
+              ? '海报经服务器代理加载，点击改为直连'
+              : '海报直连加载，点击改为经服务器代理'
           "
           placement="bottom"
         >
-          <el-button
-            type="text"
-            class="view-toggle"
-            @click="
-              userStore.setImagesSource(userStore.imagesSource === 'proxy' ? 'local' : 'proxy')
-            "
-          >
-            <el-icon>
-              <component :is="userStore.imagesSource === 'proxy' ? 'Guide' : 'Location'" />
-            </el-icon>
+          <el-button text size="small" :icon="Picture" @click="toggleImagesSource">
+            海报：{{ userStore.imagesSource === "proxy" ? "代理" : "直连" }}
           </el-button>
         </el-tooltip>
-        <el-tooltip
-          effect="dark"
-          :content="userStore.displayStyle === 'card' ? '切换到列表视图' : '切换到卡片视图'"
-          placement="bottom"
-        >
-          <el-button
-            type="text"
-            class="view-toggle"
-            @click="setDisplayStyle(userStore.displayStyle === 'card' ? 'table' : 'card')"
+        <div class="segmented" role="group" aria-label="显示方式">
+          <button
+            type="button"
+            :class="{ 'is-active': userStore.displayStyle === 'card' }"
+            @click="setDisplayStyle('card')"
           >
-            <el-icon>
-              <component :is="userStore.displayStyle === 'card' ? 'Menu' : 'Grid'" />
-            </el-icon>
-          </el-button>
-        </el-tooltip>
+            卡片
+          </button>
+          <button
+            type="button"
+            :class="{ 'is-active': userStore.displayStyle === 'table' }"
+            @click="setDisplayStyle('table')"
+          >
+            列表
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 资源列表 -->
-    <div id="pc-resources-content" ref="contentRef" class="pc-resources__content">
+    <!-- 资源列表（返回顶部按钮绑定在这个滚动容器上，容器要一直在） -->
+    <div id="pc-resources-content" class="pc-resources__content">
+      <!-- 搜索中：骨架屏 -->
+      <div v-if="resourceStore.loading" class="pc-resources__skeleton" aria-busy="true">
+        <p class="skeleton__hint">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          {{
+            resourceStore.keyword ? `正在搜索「${resourceStore.keyword}」` : "正在加载"
+          }}，会顺带检查 115 链接是否有效，最长约半分钟
+        </p>
+        <div class="skeleton__grid">
+          <div v-for="n in 6" :key="n" class="skeleton__card">
+            <span class="sk sk--cover" />
+            <div class="skeleton__body">
+              <span class="sk sk--pill" />
+              <span class="sk sk--line" />
+              <span class="sk sk--line sk--short" />
+              <span class="sk sk--line sk--tiny" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <component
         :is="userStore.displayStyle === 'table' ? ResourceTable : ResourceCard"
-        v-if="resourceStore.resources.length > 0"
+        v-else-if="hasResults"
         @load-more="handleLoadMore"
         @jump="handleJump"
         @search-moviefor-tag="searchMovieforTag"
@@ -63,18 +85,47 @@
       />
 
       <!-- 空状态 -->
-      <div v-if="resourceStore.resources.length === 0" class="pc-resources__empty">
-        <el-empty :image-size="200">
-          <template #description>
-            <p class="empty-text">暂无资源</p>
-            <el-tooltip effect="dark" content="点击获取最新资源" placement="top">
-              <el-button type="primary" @click="refreshResources">
-                <el-icon><Refresh /></el-icon>
-                <span>刷新资源</span>
-              </el-button>
-            </el-tooltip>
-          </template>
-        </el-empty>
+      <div v-else class="pc-resources__empty">
+        <div class="empty__icon">
+          <el-icon><Search /></el-icon>
+        </div>
+        <h2 class="empty__title">
+          {{
+            resourceStore.keyword ? `没有找到「${resourceStore.keyword}」的资源` : "搜索影视资源"
+          }}
+        </h2>
+        <p class="empty__desc">
+          {{
+            resourceStore.keyword
+              ? "换个关键词试试，比如去掉年份、季数，只留片名。"
+              : "在上方输入片名回车，搜索 115 网盘和磁力资源；粘贴 115 / 夸克分享链接可以直接解析转存。"
+          }}
+        </p>
+
+        <div v-if="resourceStore.recentKeywords.length" class="empty__recent">
+          <div class="recent__head">
+            <span>最近搜索</span>
+            <button type="button" class="link-btn" @click="resourceStore.clearRecentKeywords()">
+              清空
+            </button>
+          </div>
+          <div class="recent__list">
+            <button
+              v-for="word in resourceStore.recentKeywords"
+              :key="word"
+              type="button"
+              class="chip"
+              @click="searchKeyword(word)"
+            >
+              {{ word }}
+            </button>
+          </div>
+        </div>
+
+        <div class="empty__actions">
+          <el-button @click="router.push('/douban?type=movie')">逛逛豆瓣热门</el-button>
+          <el-button text @click="refreshResources">刷新频道最新资源</el-button>
+        </div>
       </div>
     </div>
 
@@ -99,10 +150,10 @@
             <div class="title-main">
               <el-tag
                 :type="resourceStore.tagColor[currentResource.cloudType as keyof TagColor]"
-                effect="dark"
+                effect="light"
                 round
               >
-                {{ currentResource.cloudType }}
+                {{ cloudTypeLabel(currentResource.cloudType) }}
               </el-tag>
               {{ saveDialogMap[saveDialogStep].title }}
             </div>
@@ -182,7 +233,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="lixianDialogVisible = false">取消</el-button>
-          <el-button type="warning" plain @click="submitLixian('0')" :loading="lixianSubmitting">
+          <el-button type="warning" plain :loading="lixianSubmitting" @click="submitLixian('0')">
             保存到根目录
           </el-button>
           <el-button
@@ -196,19 +247,11 @@
         </div>
       </template>
     </el-dialog>
-
-    <!-- 加载状态 -->
-    <div v-if="resourceStore.loading" class="pc-resources__loading">
-      <div class="loading-text">加载中...</div>
-      <div class="is-loading">
-        <el-icon><Loading /></el-icon>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useUserSettingStore } from "@/stores/userSetting";
 import FolderSelect from "@/components/Home/FolderSelect.vue";
@@ -220,8 +263,9 @@ import { onMounted, onBeforeUnmount } from "vue";
 import ResourceCard from "@/components/Home/ResourceCard.vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { ArrowUp } from "@element-plus/icons-vue";
+import { ArrowUp, Loading, Picture, Refresh, Search } from "@element-plus/icons-vue";
 import { add115Lixian } from "@/utils/magnet";
+import { cloudTypeLabel, primaryLink } from "@/utils/resource";
 const router = useRouter();
 
 const resourceStore = useResourceStore();
@@ -239,8 +283,21 @@ const lixianFolderId = ref<string | null>(null);
 const lixianSubmitting = ref(false);
 const lixianNewName = ref("");
 
+const hasResults = computed(() => resourceStore.resources.length > 0);
+const totalCount = computed(() =>
+  resourceStore.resources.reduce((sum, group) => sum + group.list.length, 0)
+);
+
 const refreshResources = async () => {
   resourceStore.searchResources("", false);
+};
+
+const searchKeyword = (word: string) => {
+  resourceStore.searchResources(word);
+};
+
+const toggleImagesSource = () => {
+  userStore.setImagesSource(userStore.imagesSource === "proxy" ? "local" : "proxy");
 };
 
 const saveDialogMap = {
@@ -297,10 +354,7 @@ const handleLoadMore = (channelId: string) => {
 };
 
 const handleJump = (resource: ResourceItem) => {
-  const link =
-    resource.cloudLinks?.find((l) => !/^magnet:/i.test(l)) ||
-    resource.cloudLinks?.[0] ||
-    resource.magnet?.[0];
+  const link = primaryLink(resource);
   if (!link) {
     ElMessage.warning("没有可跳转的链接");
     return;
@@ -356,8 +410,9 @@ const submitLixian = async (cid?: string) => {
 const searchMovieforTag = (tag: string) => {
   router.push({ path: "/resource", query: { keyword: tag } });
 };
-// 页面进入 设置缓存的数据源
+// 页面进入 设置缓存的数据源；从别的页面发起的搜索已经在进行或已有结果时不覆盖
 onMounted(() => {
+  if (resourceStore.loading || resourceStore.keyword) return;
   const lastResourceList = localStorage.getItem("last_resource_list");
   if (lastResourceList) {
     resourceStore.resources = JSON.parse(lastResourceList).list;
@@ -371,207 +426,297 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-@import "@/styles/common.scss";
-@import "@/styles/responsive.scss";
-
 .pc-resources {
-  // 整体容器
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
 
-  // 头部工具栏
-  &__header {
-    @include glass-effect;
+  &__toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 48px;
-    padding: 0 20px;
-    margin-bottom: 16px;
-    border-radius: var(--theme-radius);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    transition: var(--theme-transition);
+    gap: var(--space-4);
+    flex: none;
+    margin-bottom: var(--space-4);
 
-    &:hover {
-      border-color: var(--theme-primary);
-      box-shadow: var(--theme-shadow-sm);
-    }
-
-    .header__left {
+    .toolbar__summary {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       flex-wrap: wrap;
-      gap: 12px;
-      padding: 8px 0;
-
-      .refresh-btn {
-        @include flex-center;
-        gap: 8px;
-        color: var(--theme-text-regular);
-        transition: var(--theme-transition);
-        white-space: nowrap;
-
-        .el-icon {
-          font-size: 18px;
-          color: var(--theme-primary);
-        }
-
-        .update-time {
-          margin-left: 4px;
-          font-size: 13px;
-          color: var(--theme-text-secondary);
-          white-space: nowrap;
-        }
-
-        &:hover {
-          color: var(--theme-primary);
-          transform: translateY(-1px);
-        }
-      }
+      gap: var(--space-2) var(--space-3);
+      min-width: 0;
     }
 
-    .header__right {
+    .summary__title {
+      margin: 0;
+      font-size: var(--text-xl);
+      font-weight: var(--weight-bold);
+      color: var(--text-primary);
+      line-height: var(--leading-tight);
+    }
+
+    .summary__meta {
+      color: var(--text-tertiary);
+      font-size: var(--text-sm);
+    }
+
+    .toolbar__actions {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 8px 0;
-
-      .view-toggle {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        color: var(--theme-text-regular);
-        border-radius: var(--theme-radius);
-        transition: var(--theme-transition);
-
-        .el-icon {
-          font-size: 18px;
-        }
-
-        &:hover {
-          color: var(--theme-primary);
-          background: rgba(0, 102, 204, 0.05);
-          transform: translateY(-1px);
-        }
-      }
+      gap: var(--space-3);
+      flex: none;
     }
   }
 
-  // 内容区域
   &__content {
     position: relative;
-    width: 100%;
-    height: calc(100vh - 180px);
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-
-    // 资源列表组件样式覆盖
-    :deep(.resource-table),
-    :deep(.resource-card) {
-      height: 100%;
-
-      // 自定义滚动条
-      &::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-
-        &:hover {
-          background: rgba(0, 0, 0, 0.3);
-        }
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent;
-      }
-    }
   }
 
-  // 加载状态
-  &__loading {
-    @include glass-effect;
-    @include flex-center;
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    flex-direction: column;
-    gap: 16px;
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    animation: fadeIn 0.3s ease;
-
-    .loading-text {
-      color: var(--theme-text-primary);
-      font-size: 14px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
-
-    .is-loading {
-      font-size: 24px;
-      color: var(--theme-primary);
-      animation: rotating 2s linear infinite;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    }
-  }
-
-  // 空状态
-  &__empty {
-    @include flex-center;
-    flex-direction: column;
-    gap: 16px;
-    height: 100%;
-
-    .empty-text {
-      color: var(--theme-text-primary);
-      font-size: 14px;
-      margin: 8px 0 16px;
-    }
-
-    .el-button {
-      @include flex-center;
-      gap: 8px;
-      padding: 8px 20px;
-      height: 40px;
-      font-size: 14px;
-      transition: var(--theme-transition);
-      background: var(--theme-primary);
-      border-color: var(--theme-primary);
-
-      .el-icon {
-        font-size: 16px;
-      }
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--theme-shadow-sm);
-      }
-    }
-  }
-
-  // 返回顶部按钮
   &__backtop {
-    @include flex-center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 40px;
     height: 40px;
-    color: var(--theme-primary);
-    background: var(--theme-card-bg);
-    border-radius: var(--theme-radius);
-    box-shadow: var(--theme-shadow);
-    transition: var(--theme-transition);
-
-    &:hover {
-      background: var(--theme-primary);
-      color: #fff;
-      transform: translateY(-2px);
-    }
+    color: var(--primary-600);
+    background: var(--surface-raised);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-3);
 
     .el-icon {
-      font-size: 20px;
+      font-size: 18px;
     }
+  }
+}
+
+// 卡片 / 列表切换
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--grey-200);
+
+  button {
+    height: 28px;
+    padding: 0 var(--space-3);
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: var(--theme-transition);
+
+    &.is-active {
+      background: var(--surface-raised);
+      color: var(--text-primary);
+      font-weight: var(--weight-medium);
+      box-shadow: var(--shadow-1);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+  }
+}
+
+// 骨架屏
+.pc-resources__skeleton {
+  .skeleton__hint {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-4);
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+  }
+
+  .skeleton__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .skeleton__card {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .skeleton__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    flex: 1;
+    padding-top: var(--space-1);
+  }
+
+  .sk {
+    display: block;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+      90deg,
+      var(--grey-100) 25%,
+      var(--grey-200) 37%,
+      var(--grey-100) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+
+    &--cover {
+      flex: none;
+      width: 96px;
+      height: 136px;
+      border-radius: var(--radius);
+    }
+
+    &--pill {
+      width: 96px;
+      height: 20px;
+      border-radius: var(--radius-full);
+    }
+
+    &--line {
+      width: 92%;
+      height: 16px;
+    }
+
+    &--short {
+      width: 64%;
+    }
+
+    &--tiny {
+      width: 40%;
+      margin-top: auto;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+// 空状态
+.pc-resources__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4) var(--space-6);
+  text-align: center;
+
+  .empty__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--primary-100);
+    color: var(--primary-500);
+    font-size: 28px;
+  }
+
+  .empty__title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    line-height: var(--leading-tight);
+  }
+
+  .empty__desc {
+    margin: 0;
+    text-wrap: balance;
+    color: var(--text-tertiary);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+  }
+
+  .empty__recent {
+    width: 100%;
+    margin-top: var(--space-6);
+    padding: var(--space-4);
+    text-align: left;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    .recent__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+    }
+
+    .recent__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+  }
+
+  .empty__actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+
+    .el-button {
+      margin: 0;
+    }
+  }
+}
+
+.chip {
+  height: 30px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--grey-50);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: var(--theme-transition);
+
+  &:hover {
+    border-color: var(--primary-200);
+    background: var(--primary-50);
+    color: var(--primary-700);
+  }
+}
+
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-tertiary);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--red-500);
   }
 }
 
@@ -580,103 +725,78 @@ onBeforeUnmount(() => {
   h3 {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-1);
     margin: 0;
-    font-weight: 600;
-    color: var(--theme-text-primary);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
 
     .title-main {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 16px;
+      gap: var(--space-2);
+      font-size: var(--text-md);
     }
 
     .title-sub {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: var(--theme-text-secondary);
+      gap: var(--space-2);
+      font-size: var(--text-base);
+      color: var(--text-tertiary);
       font-weight: normal;
-    }
-
-    .resource-title {
-      max-width: 300px;
-      @include text-ellipsis;
     }
   }
 
+  .resource-title {
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .file-size {
-    color: var(--theme-text-secondary);
+    color: var(--text-tertiary);
   }
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding-top: 16px;
+  gap: var(--space-3);
+
+  .el-button {
+    margin: 0;
+  }
 }
 
 :deep(.el-dialog) {
-  border-radius: var(--theme-radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 
   .el-dialog__header {
     margin: 0;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
   }
 
   .el-dialog__body {
-    padding: 24px;
+    padding: var(--space-5);
   }
 
   .el-dialog__footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--el-border-color-lighter);
-  }
-}
-
-// 表格扩展列样式
-:deep(.el-table) {
-  .el-table__expand-column {
-    .cell {
-      padding: 0;
-    }
-  }
-
-  .el-table__expanded-cell {
-    padding: 20px;
-  }
-
-  .el-table__expand-icon {
-    height: 23px;
-    line-height: 23px;
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border);
   }
 }
 
 .rename-field {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 
   label {
     display: block;
-    margin-bottom: 8px;
-    color: var(--theme-text-regular);
-    font-size: 13px;
-  }
-}
-
-// 加载动画
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
+    margin-bottom: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
   }
 }
 </style>

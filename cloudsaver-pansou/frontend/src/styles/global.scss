@@ -1,11 +1,2 @@
-:root {
-  --theme-color: #3e3e3e;
-  --theme-theme: #133ab3;
-  --theme-background: #fafafa;
-  --theme-other_background: #ffffff;
-}
-
-input {
-  border: none;
-  outline: none;
-}
+// vite.config.ts 把这个文件注入到每个组件的 <style> 里：只能放变量和 mixin，不要写会输出 CSS 的规则。
+// 全局样式放 tokens.scss / App.vue。

@@ -1,96 +1,86 @@
-﻿<template>
+<template>
   <div class="resource-card">
-    <div v-for="item in dataList" :key="item.id" class="resource-card__item">
-      <!-- 内容区域 -->
-      <div class="item__content">
-        <!-- 左侧图片 -->
-        <div class="content__image">
-          <van-image
-            :src="getProxyImageUrl(item.image as string)"
-            :fit="item.image ? 'cover' : 'contain'"
-            lazy-load
-          />
-          <!-- 来源标签移到图片左上角 -->
-          <van-tag class="image__tag" :color="getTagColor(item.cloudType)" round>
-            {{ item.cloudType }}
-          </van-tag>
-          <van-tag
-            v-if="item.linkStatus"
-            class="image__status"
-            :type="linkStatusType(item.linkStatus)"
-            round
-          >
-            {{ linkStatusText(item.linkStatus) }}
-          </van-tag>
+    <article
+      v-for="(item, index) in dataList"
+      :key="resourceKey(item, index)"
+      class="m-item"
+      :class="{ 'is-bad': item.linkStatus === 'bad' }"
+    >
+      <div class="m-item__main">
+        <div class="m-item__cover">
+          <van-image v-if="item.image" :src="getProxyImageUrl(item.image)" fit="cover" lazy-load />
+          <span v-else class="cover-placeholder" :data-type="item.cloudType">
+            {{ cloudTypeLabel(item.cloudType) }}
+          </span>
         </div>
 
-        <!-- 右侧信息 -->
-        <div class="content__info">
-          <!-- 标题 -->
-          <div class="info__title" @click="copyUrl(item.cloudLinks[0])">
+        <div class="m-item__info">
+          <div class="m-item__meta">
+            <span class="badge badge--type" :data-type="item.cloudType">
+              {{ cloudTypeLabel(item.cloudType) }}
+            </span>
+            <span
+              v-if="item.linkStatus"
+              class="badge"
+              :class="`badge--${LINK_STATUS_TONE[item.linkStatus]}`"
+            >
+              {{ LINK_STATUS_LABEL[item.linkStatus] }}
+            </span>
+          </div>
+
+          <!-- 点标题复制链接 -->
+          <div class="m-item__title" @click="copyUrl(item.cloudLinks[0])">
             {{ item.title }}
           </div>
 
-          <!-- 描述 - 添加展开收起功能 -->
+          <!-- 点描述展开 / 收起 -->
           <div
-            class="info__desc"
-            :class="{
-              'is-expanded': expandedItems[(item.messageId || '') + (item.channelId || '')],
-            }"
-            @click="toggleExpand((item.messageId || '') + (item.channelId || ''))"
-            v-html="item.content"
-          />
+            v-if="htmlToText(item.content)"
+            class="m-item__desc"
+            :class="{ 'is-expanded': expandedItems[resourceKey(item, index)] }"
+            @click="toggleExpand(resourceKey(item, index))"
+          >
+            {{ htmlToText(item.content) }}
+          </div>
 
-          <!-- 底部区域：标签 -->
-          <div class="info__footer">
-            <div v-if="item.tags?.length" class="info__tags">
-              <van-tag
-                v-for="tag in item.tags"
-                :key="tag"
-                type="primary"
-                plain
-                round
-                @click.stop="searchMovieforTag(tag)"
-              >
-                {{ tag }}
-              </van-tag>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div class="info__action">
-              <FollowButton :resource="item" />
-              <van-button type="primary" size="mini" round plain @click="handleJump(item)">
-                跳转
-              </van-button>
-              <van-button
-                v-if="item.isSupportMagnet"
-                type="warning"
-                size="mini"
-                round
-                plain
-                @click="handleCopyMagnet(item)"
-                >复制磁力</van-button
-              >
-              <van-button
-                v-if="item.isSupportMagnet"
-                type="warning"
-                size="mini"
-                round
-                @click="handle115Lixian(item)"
-                >115离线</van-button
-              >
-              <van-button
-                v-if="item.isSupportSave"
-                type="primary"
-                size="mini"
-                round
-                @click="handleSave(item)"
-                >转存</van-button
-              >
-            </div>
+          <div v-if="item.tags?.length" class="m-item__tags">
+            <span
+              v-for="tag in item.tags.slice(0, 4)"
+              :key="tag"
+              class="tag"
+              @click.stop="searchMovieforTag(tag)"
+            >
+              #{{ tag }}
+            </span>
           </div>
         </div>
       </div>
+
+      <div class="m-item__actions">
+        <FollowButton compact :resource="item" />
+        <span class="actions__spacer" />
+        <van-button size="small" plain @click="handleJump(item)">打开</van-button>
+        <van-button v-if="item.isSupportMagnet" size="small" plain @click="handleCopyMagnet(item)">
+          复制磁力
+        </van-button>
+        <van-button
+          v-if="item.isSupportMagnet"
+          size="small"
+          type="warning"
+          @click="handle115Lixian(item)"
+        >
+          115离线
+        </van-button>
+        <van-button v-if="item.isSupportSave" size="small" type="primary" @click="handleSave(item)">
+          转存
+        </van-button>
+      </div>
+    </article>
+
+    <div v-if="group" class="resource-card__end">
+      <van-loading v-if="group.loading" size="16px">加载中…</van-loading>
+      <template v-else-if="hasMorePages">滑到底部自动加载更多</template>
+      <template v-else>共 {{ dataList.length }} 条</template>
     </div>
   </div>
 </template>
@@ -102,6 +92,13 @@ import { useResourceStore } from "@/stores/resource";
 import type { ResourceItem } from "@/types";
 import { getProxyImageUrl } from "@/utils/image";
 import { copyText, copyMagnet } from "@/utils/magnet";
+import {
+  LINK_STATUS_LABEL,
+  LINK_STATUS_TONE,
+  cloudTypeLabel,
+  htmlToText,
+  resourceKey,
+} from "@/utils/resource";
 
 const props = defineProps<{
   currentChannelId: string;
@@ -115,40 +112,15 @@ const emit = defineEmits<{
 }>();
 
 const store = useResourceStore();
-const linkStatusText = (status: ResourceItem["linkStatus"]): string => {
-  const labels: Record<string, string> = {
-    ok: "有效",
-    locked: "需码",
-    uncertain: "待确认",
-    unsupported: "未检测",
-    bad: "失效",
-  };
-  return labels[status || ""] || "";
-};
 
-const linkStatusType = (
-  status: ResourceItem["linkStatus"]
-): "primary" | "success" | "warning" | "danger" | "default" => {
-  if (status === "ok") return "success";
-  if (status === "locked") return "warning";
-  if (status === "bad") return "danger";
-  return "primary";
-};
-
-const dataList = computed(() => {
-  const channel = store.resources.find((item) => item.id === props.currentChannelId);
-  return channel?.list || [];
+const group = computed(() => store.resources.find((item) => item.id === props.currentChannelId));
+const dataList = computed(() => group.value?.list || []);
+// PanSou 分组一次返回全部结果，TG 频道到底前都能继续翻
+const hasMorePages = computed(() => {
+  const id = group.value?.id || "";
+  const last = dataList.value[dataList.value.length - 1];
+  return Boolean(id) && !id.startsWith("pansou_") && !last?.isLastMessage;
 });
-
-const getTagColor = (type?: string) => {
-  const colorMap: Record<string, string> = {
-    pan115: "#07c160",
-    quark: "#1989fa",
-    magnet: "#ff976a",
-    ed2k: "#7232dd",
-  };
-  return colorMap[type || ""] || "#ff976a";
-};
 
 const handleSave = (resource: ResourceItem) => {
   emit("save", resource);
@@ -184,73 +156,72 @@ const toggleExpand = (id: string) => {
 </script>
 
 <style lang="scss" scoped>
-// 文本省略混入 - 移到最前面
-@mixin text-ellipsis($lines) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: $lines;
-  overflow: hidden;
-}
-
 .resource-card {
-  padding: 5px 10px;
+  padding: 4px 12px 0;
 
-  &__item {
-    margin-bottom: 12px;
-    background: var(--theme-other_background);
-    border-radius: var(--border-radius-lg);
-    overflow: hidden;
-  }
-}
-
-.item {
-  &__content {
+  &__end {
     display: flex;
-    gap: 16px;
-    padding: 16px;
+    justify-content: center;
+    padding: 8px 0 16px;
+    color: var(--text-tertiary);
+    font-size: 12px;
   }
 }
 
-.content {
-  &__image {
-    position: relative; // 为标签定位
-    flex-shrink: 0;
-    width: 100px;
-    height: 140px;
-    border-radius: var(--border-radius-sm);
+.m-item {
+  margin-bottom: 10px;
+  padding: 12px;
+  background: var(--surface-raised);
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
+
+  &.is-bad {
+    opacity: 0.6;
+  }
+
+  &__main {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__cover {
+    flex: none;
+    width: 72px;
+    height: 100px;
+    border-radius: 8px;
     overflow: hidden;
-    background: var(--van-gray-2);
+    background: var(--grey-100);
 
     :deep(.van-image) {
       width: 100%;
       height: 100%;
     }
-
-    .image__tag {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 10px;
-      padding: 0 6px;
-    }
   }
 
   &__info {
-    flex: 1;
-    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
   }
-}
 
-.info {
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
   &__title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    color: var(--text-primary);
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.4;
-    color: var(--theme-color);
-    @include text-ellipsis(2);
+    overflow-wrap: anywhere;
 
     &:active {
       opacity: 0.7;
@@ -258,74 +229,124 @@ const toggleExpand = (id: string) => {
   }
 
   &__desc {
-    position: relative;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    color: var(--text-tertiary);
     font-size: 13px;
-    line-height: 1.6;
-    color: var(--van-gray-7);
-    @include text-ellipsis(3);
-    margin: 4px 0;
-    cursor: pointer;
-    transition: all 0.3s;
+    line-height: 1.5;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
 
     &.is-expanded {
-      -webkit-line-clamp: 8;
+      -webkit-line-clamp: 12;
     }
-
-    &::after {
-      content: "展开";
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      padding: 0 4px;
-      font-size: 12px;
-      color: var(--theme-theme);
-      background: var(--theme-other_background);
-    }
-
-    &.is-expanded::after {
-      content: "收起";
-    }
-  }
-
-  &__footer {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-    margin-top: auto;
   }
 
   &__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px 8px;
 
-    :deep(.van-tag) {
-      font-size: 11px;
-      padding: 0 8px;
+    .tag {
+      color: var(--primary-600);
+      font-size: 12px;
     }
   }
 
-  &__action {
+  &__actions {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 4px 0;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+
+    .actions__spacer {
+      flex: 1;
+    }
 
     .van-button {
-      font-size: 12px;
       height: 28px;
-      padding: 0 12px;
       margin: 0;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
 
-      :deep(.van-button__text) {
-        font-weight: 500;
-        font-size: 12px;
-      }
+    .van-button--plain {
+      color: var(--text-secondary);
+      border-color: var(--border-strong);
+    }
+  }
+}
 
-      &:active {
-        opacity: 0.8;
-      }
+.cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary-400);
+  background: linear-gradient(160deg, var(--primary-50), var(--primary-100));
+
+  &[data-type="magnet"],
+  &[data-type="ed2k"] {
+    color: var(--amber-500);
+    background: linear-gradient(160deg, hsl(43, 100%, 96%), var(--amber-100));
+  }
+
+  &[data-type="quark"] {
+    color: var(--violet-500);
+    background: linear-gradient(160deg, hsl(262, 90%, 98%), var(--violet-100));
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--grey-100);
+  color: var(--grey-600);
+
+  &--success {
+    background: var(--green-100);
+    color: var(--green-700);
+  }
+
+  &--warning {
+    background: var(--amber-100);
+    color: var(--amber-700);
+  }
+
+  &--danger {
+    background: var(--red-100);
+    color: var(--red-700);
+  }
+
+  &--type {
+    background: var(--primary-50);
+    color: var(--primary-700);
+
+    &[data-type="magnet"],
+    &[data-type="ed2k"] {
+      background: var(--amber-100);
+      color: var(--amber-700);
+    }
+
+    &[data-type="quark"] {
+      background: var(--violet-100);
+      color: var(--violet-700);
     }
   }
 }

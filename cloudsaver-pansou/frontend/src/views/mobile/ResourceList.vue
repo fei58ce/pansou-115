@@ -1,46 +1,97 @@
 <template>
   <div ref="listRef" class="resource-list">
-    <!-- 头部刷新区 -->
-    <van-cell-group :border="false" class="resource-list__header">
-      <van-cell center clickable @click="refreshResources">
-        <template #icon>
-          <van-icon name="replay" class="header__icon" />
-        </template>
-        <template #title>
-          <div class="header__content">
-            <span class="content__title">最新资源</span>
-            <span class="content__tip">(点击可获取最新资源)</span>
-          </div>
-        </template>
-        <template #label>
-          <span class="header__time">上次刷新：{{ resourceStore.lastUpdateTime }}</span>
-        </template>
-      </van-cell>
-    </van-cell-group>
+    <!-- 搜索中：骨架屏 -->
+    <div v-if="resourceStore.loading" class="resource-list__skeleton" aria-busy="true">
+      <p class="skeleton__hint">
+        <van-loading size="14px" />
+        {{
+          resourceStore.keyword ? `正在搜索「${resourceStore.keyword}」` : "正在加载"
+        }}，会顺带检查 115 链接是否有效
+      </p>
+      <div v-for="n in 4" :key="n" class="skeleton__card">
+        <span class="sk sk--cover" />
+        <div class="skeleton__body">
+          <span class="sk sk--pill" />
+          <span class="sk sk--line" />
+          <span class="sk sk--line sk--short" />
+        </div>
+      </div>
+    </div>
 
-    <!-- 资源列表 -->
-    <van-tabs
-      v-model:active="currentTab"
-      swipeable
-      animated
-      class="resource-list__tabs"
-      :border="false"
-    >
-      <van-tab
-        v-for="item in resourceStore.resources"
-        :key="item.id"
-        :name="item.id"
-        :title="item.channelInfo.name"
+    <!-- 空状态 -->
+    <div v-else-if="!resourceStore.resources.length" class="resource-list__empty">
+      <div class="empty__icon"><van-icon name="search" /></div>
+      <h2 class="empty__title">
+        {{ resourceStore.keyword ? `没有找到「${resourceStore.keyword}」` : "搜索影视资源" }}
+      </h2>
+      <p class="empty__desc">
+        {{
+          resourceStore.keyword
+            ? "换个关键词试试，比如去掉年份、季数，只留片名。"
+            : "在顶部输入片名搜索 115 网盘和磁力资源，也可以粘贴分享链接直接解析。"
+        }}
+      </p>
+      <div v-if="resourceStore.recentKeywords.length" class="empty__recent">
+        <div class="recent__head">
+          <span>最近搜索</span>
+          <span class="recent__clear" @click="resourceStore.clearRecentKeywords()">清空</span>
+        </div>
+        <div class="recent__list">
+          <span
+            v-for="word in resourceStore.recentKeywords"
+            :key="word"
+            class="chip"
+            @click="resourceStore.searchResources(word)"
+          >
+            {{ word }}
+          </span>
+        </div>
+      </div>
+      <span class="empty__refresh" @click="refreshResources">刷新频道最新资源</span>
+    </div>
+
+    <template v-else>
+      <!-- 结果概览 -->
+      <div class="resource-list__summary">
+        <template v-if="resourceStore.keyword">
+          <span class="summary__title">「{{ resourceStore.keyword }}」</span>
+          <span class="summary__meta">
+            {{ resourceStore.resources.length }} 个来源 · 共 {{ totalCount }} 条
+          </span>
+        </template>
+        <template v-else>
+          <span class="summary__title">最新资源</span>
+          <span v-if="resourceStore.lastUpdateTime" class="summary__meta">
+            更新于 {{ resourceStore.lastUpdateTime }}
+          </span>
+          <van-icon name="replay" class="summary__refresh" @click="refreshResources" />
+        </template>
+      </div>
+
+      <!-- 资源列表 -->
+      <van-tabs
+        v-model:active="currentTab"
+        swipeable
+        animated
+        shrink
+        class="resource-list__tabs"
+        :border="false"
       >
-        <ResourceCard
-          :current-channel-id="currentTab"
-          @save="handleSave"
-          @jump="handleJump"
-          @search-moviefor-tag="searchMovieforTag"
-          @lixian="handleLixian"
-        />
-      </van-tab>
-    </van-tabs>
+        <van-tab v-for="item in resourceStore.resources" :key="item.id" :name="item.id">
+          <template #title>
+            <span class="tab-title">{{ item.channelInfo.name }}</span>
+            <span class="tab-count">{{ item.list.length }}</span>
+          </template>
+          <ResourceCard
+            :current-channel-id="currentTab"
+            @save="handleSave"
+            @jump="handleJump"
+            @search-moviefor-tag="searchMovieforTag"
+            @lixian="handleLixian"
+          />
+        </van-tab>
+      </van-tabs>
+    </template>
 
     <!-- 115 离线下载：选择保存目录 -->
     <van-popup
@@ -248,6 +299,10 @@ const getCurrentFolderName = computed(() => {
     : "待选择";
 });
 
+const totalCount = computed(() =>
+  resourceStore.resources.reduce((sum, group) => sum + group.list.length, 0)
+);
+
 // 常量定义
 const saveDialogMap = {
   1: { title: "选择资源", buttonText: "下一步" },
@@ -417,8 +472,9 @@ watch(currentTab, () => {
     appElement.scrollTo(0, 0);
   }
 });
-// 页面进入 设置缓存的数据源
+// 页面进入 设置缓存的数据源；从别的页面发起的搜索已经在进行或已有结果时不覆盖
 onMounted(() => {
+  if (resourceStore.loading || resourceStore.keyword) return;
   const lastResourceList = localStorage.getItem("last_resource_list");
   if (lastResourceList) {
     resourceStore.resources = JSON.parse(lastResourceList).list;
@@ -434,73 +490,232 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .resource-list {
   min-height: 100%;
-  background: var(--van-background);
+  background: var(--surface);
   padding-bottom: 20px;
 
-  &__header {
-    margin-bottom: 8px;
-    background: var(--theme-other_background);
+  &__summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 12px 16px 4px;
 
-    :deep(.van-cell) {
-      padding: 12px 16px;
-      min-height: 24px;
+    .summary__title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
     }
 
-    .header__icon {
-      font-size: 30px;
-      color: var(--theme-theme);
-      margin-right: 10px;
-      line-height: 1;
-    }
-
-    .header__content {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-
-      .content__title {
-        font-size: 15px;
-        font-weight: 500;
-        line-height: 1.4;
-      }
-
-      .content__tip {
-        font-size: 12px;
-        color: var(--van-gray-6);
-        background: var(--van-gray-1);
-        padding: 2px 6px;
-        border-radius: 4px;
-        line-height: 1.4;
-      }
-    }
-
-    .header__time {
+    .summary__meta {
       font-size: 12px;
-      color: var(--van-gray-6);
-      line-height: 1.4;
-      margin-top: 2px;
+      color: var(--text-tertiary);
+    }
+
+    .summary__refresh {
+      margin-left: auto;
+      padding: 4px;
+      font-size: 18px;
+      color: var(--primary-500);
     }
   }
 
   &__tabs {
     :deep(.van-tabs__wrap) {
-      background: var(--theme-other_background);
+      background: var(--surface);
     }
 
     :deep(.van-tab) {
+      padding: 0 12px;
       font-size: 14px;
-      padding: 0 20px;
-      height: 44px;
-      line-height: 44px;
     }
 
     :deep(.van-tabs__line) {
-      background: var(--theme-theme);
+      background: var(--primary-500);
     }
 
     :deep(.van-tabs__content) {
       padding: 8px 0;
     }
+
+    .tab-title {
+      display: inline-block;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .tab-count {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 0 6px;
+      border-radius: 8px;
+      background: var(--grey-200);
+      color: var(--text-secondary);
+      font-size: 11px;
+      line-height: 16px;
+      vertical-align: middle;
+    }
+
+    :deep(.van-tab--active .tab-count) {
+      background: var(--primary-50);
+      color: var(--primary-700);
+    }
+  }
+
+  &__skeleton {
+    padding: 12px;
+
+    .skeleton__hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 4px 12px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .skeleton__card {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+      padding: 12px;
+      background: var(--surface-raised);
+      border-radius: 12px;
+    }
+
+    .skeleton__body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      padding-top: 2px;
+    }
+
+    .sk {
+      display: block;
+      border-radius: 6px;
+      background: linear-gradient(
+        90deg,
+        var(--grey-100) 25%,
+        var(--grey-200) 37%,
+        var(--grey-100) 63%
+      );
+      background-size: 400% 100%;
+      animation: m-shimmer 1.4s ease infinite;
+
+      &--cover {
+        flex: none;
+        width: 72px;
+        height: 100px;
+        border-radius: 8px;
+      }
+
+      &--pill {
+        width: 80px;
+        height: 18px;
+        border-radius: 9px;
+      }
+
+      &--line {
+        width: 92%;
+        height: 14px;
+      }
+
+      &--short {
+        width: 60%;
+      }
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 56px 24px 24px;
+    text-align: center;
+
+    .empty__icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      margin-bottom: 14px;
+      border-radius: 50%;
+      background: var(--primary-100);
+      color: var(--primary-500);
+      font-size: 26px;
+    }
+
+    .empty__title {
+      margin: 0 0 6px;
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .empty__desc {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-tertiary);
+    }
+
+    .empty__recent {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      text-align: left;
+      background: var(--surface-raised);
+      border-radius: 12px;
+      box-sizing: border-box;
+    }
+
+    .recent__head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .recent__clear {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-tertiary);
+    }
+
+    .recent__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 5px 12px;
+      border-radius: 15px;
+      background: var(--grey-100);
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .empty__refresh {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--primary-600);
+    }
+  }
+}
+
+@keyframes m-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
   }
 }
 

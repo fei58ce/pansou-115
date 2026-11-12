@@ -1,249 +1,255 @@
-﻿<template>
+<template>
   <div class="resource-card">
     <!-- 详情弹窗 -->
     <el-dialog
       v-model="showDetail"
       :title="currentResource?.title"
-      width="700px"
+      width="680px"
       class="resource-detail-dialog"
       destroy-on-close
     >
-      <div v-if="currentResource" class="detail-content">
-        <div class="detail-cover">
-          <el-image
-            class="cover-image"
-            :src="getProxyImageUrl(currentResource.image as string)"
-            :fit="currentResource.image ? 'cover' : 'contain'"
+      <div v-if="currentResource" class="detail">
+        <div class="detail__cover">
+          <img
+            v-if="currentResource.image"
+            :src="getProxyImageUrl(currentResource.image)"
+            alt=""
+            referrerpolicy="no-referrer"
           />
-          <el-tag
-            class="cloud-type"
-            :type="store.tagColor[currentResource.cloudType as keyof TagColor]"
-            effect="dark"
-            round
-          >
-            {{ currentResource.cloudType }}
-          </el-tag>
+          <span v-else class="cover-placeholder" :data-type="currentResource.cloudType">
+            {{ cloudTypeLabel(currentResource.cloudType) }}
+          </span>
         </div>
-        <div class="detail-info">
-          <h3 class="detail-title">
-            <el-link :href="currentResource.cloudLinks[0]" target="_blank" :underline="false">
-              {{ currentResource.title }}
-            </el-link>
-          </h3>
-          <div class="detail-description" v-html="currentResource.content" />
-          <div v-if="currentResource.tags?.length" class="detail-tags">
-            <div class="tags-list">
-              <el-tag
-                v-for="tag in currentResource.tags"
-                :key="tag"
-                class="tag-item"
-                @click="searchMovieforTag(tag)"
-              >
-                {{ tag }}
-              </el-tag>
-            </div>
+        <div class="detail__info">
+          <div class="item-meta">
+            <span class="badge badge--type" :data-type="currentResource.cloudType">
+              {{ cloudTypeLabel(currentResource.cloudType) }}
+            </span>
+            <span
+              v-if="currentResource.linkStatus"
+              class="badge"
+              :class="`badge--${LINK_STATUS_TONE[currentResource.linkStatus]}`"
+            >
+              {{ LINK_STATUS_LABEL[currentResource.linkStatus] }}
+            </span>
+            <span v-if="formatDate(currentResource.pubDate)" class="item-date">
+              {{ formatDate(currentResource.pubDate) }}
+            </span>
+          </div>
+          <p class="detail__desc">{{ htmlToText(currentResource.content) || "没有更多说明" }}</p>
+          <div v-if="currentResource.tags?.length" class="item-tags">
+            <button
+              v-for="tag in currentResource.tags"
+              :key="tag"
+              type="button"
+              class="tag"
+              @click="searchMovieforTag(tag)"
+            >
+              #{{ tag }}
+            </button>
           </div>
         </div>
       </div>
       <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" plain @click="currentResource && handleJump(currentResource)"
-            >跳转</el-button
-          >
+        <div v-if="currentResource" class="item-actions item-actions--dialog">
+          <FollowButton :resource="currentResource" />
+          <el-button @click="handleJump(currentResource)">打开链接</el-button>
           <el-button
-            v-if="currentResource?.isSupportMagnet"
+            v-if="currentResource.isSupportMagnet"
+            @click="handleCopyMagnet(currentResource)"
+          >
+            复制磁力
+          </el-button>
+          <el-button
+            v-if="currentResource.isSupportMagnet"
             type="warning"
-            plain
-            @click="currentResource && handleCopyMagnet(currentResource)"
-            >复制磁力</el-button
+            @click="handle115Lixian(currentResource)"
           >
+            115离线
+          </el-button>
           <el-button
-            v-if="currentResource?.isSupportMagnet"
-            type="warning"
-            @click="currentResource && handle115Lixian(currentResource)"
-            >115离线</el-button
-          >
-          <el-button
-            v-if="currentResource?.isSupportSave"
+            v-if="currentResource.isSupportSave"
             type="primary"
-            @click="currentResource && handleSave(currentResource)"
-            >转存</el-button
+            @click="handleSave(currentResource)"
           >
+            转存
+          </el-button>
         </div>
       </template>
     </el-dialog>
 
-    <div v-for="group in store.resources" :key="group.id" class="resource-group">
-      <div
-        :class="{ 'group-header': true, 'is-active': group.displayList }"
-        @click="group.displayList = !group.displayList"
-      >
-        <el-link
-          class="group-title"
-          :href="`https://t.me/s/${group.id}`"
-          target="_blank"
-          :underline="false"
-          @click.stop
-        >
-          <el-image
+    <section v-for="group in store.resources" :key="group.id" class="resource-group">
+      <header class="group-header" @click="group.displayList = !group.displayList">
+        <span class="group-avatar">
+          <img
+            v-if="group.channelInfo.channelLogo"
             :src="getProxyImageUrl(group.channelInfo.channelLogo)"
-            :fit="group.channelInfo.channelLogo ? 'cover' : 'contain'"
-            class="channel-logo"
-            scroll-container="#pc-resources-content"
+            alt=""
             loading="lazy"
           />
-          <span>{{ group.channelInfo.name }}</span>
-          <span class="item-count">({{ group.list.length }})</span>
-        </el-link>
+          <template v-else>{{ group.channelInfo.name.slice(0, 1) }}</template>
+        </span>
+        <span class="group-name">{{ group.channelInfo.name }}</span>
+        <span class="group-count">{{ group.list.length }}</span>
+        <a
+          v-if="isTelegramGroup(group.id)"
+          class="group-link"
+          :href="`https://t.me/s/${group.id}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click.stop
+        >
+          频道主页
+        </a>
+        <el-icon class="group-toggle" :class="{ 'is-open': group.displayList }">
+          <ArrowDown />
+        </el-icon>
+      </header>
 
-        <el-tooltip effect="dark" :content="group.displayList ? '收起' : '展开'" placement="top">
-          <el-button class="toggle-btn" type="text">
-            <el-icon :class="{ 'is-active': group.displayList }">
-              <ArrowDown />
-            </el-icon>
-          </el-button>
-        </el-tooltip>
-      </div>
-
-      <div v-if="group.displayList" class="group-content">
+      <div v-if="group.displayList" class="group-body">
         <div class="card-grid">
-          <el-card
-            v-for="resource in group.list"
-            :key="resource.messageId"
-            class="resource-card-item"
-            :body-style="{ padding: '0' }"
+          <article
+            v-for="(resource, index) in group.list"
+            :key="resourceKey(resource, index)"
+            class="resource-item"
+            :class="{ 'is-bad': resource.linkStatus === 'bad' }"
           >
-            <div class="card-wrapper">
-              <div class="card-cover">
-                <el-image
-                  loading="lazy"
-                  class="cover-image"
-                  :src="getProxyImageUrl(resource.image as string)"
-                  :fit="resource.image ? 'cover' : 'contain'"
-                  :alt="resource.title"
-                  @click="showResourceDetail(resource)"
-                />
-                <el-tag
-                  class="cloud-type"
-                  :type="store.tagColor[resource.cloudType as keyof TagColor]"
-                  effect="dark"
-                  round
-                  size="small"
-                >
-                  {{ resource.cloudType }}
-                </el-tag>
-                <el-tag
+            <div class="item-cover" @click="showResourceDetail(resource)">
+              <img
+                v-if="resource.image && !brokenImages.has(resource.image)"
+                :src="getProxyImageUrl(resource.image)"
+                :alt="resource.title"
+                loading="lazy"
+                @error="brokenImages.add(resource.image || '')"
+              />
+              <span v-else class="cover-placeholder" :data-type="resource.cloudType">
+                {{ cloudTypeLabel(resource.cloudType) }}
+              </span>
+            </div>
+
+            <div class="item-body">
+              <div class="item-meta">
+                <span class="badge badge--type" :data-type="resource.cloudType">
+                  {{ cloudTypeLabel(resource.cloudType) }}
+                </span>
+                <span
                   v-if="resource.linkStatus"
-                  class="link-status"
-                  :type="linkStatusType(resource.linkStatus)"
-                  effect="dark"
-                  round
-                  size="small"
+                  class="badge"
+                  :class="`badge--${LINK_STATUS_TONE[resource.linkStatus]}`"
+                  :title="resource.linkStatusMessage"
                 >
-                  {{ linkStatusText(resource.linkStatus) }}
-                </el-tag>
+                  {{ LINK_STATUS_LABEL[resource.linkStatus] }}
+                </span>
+                <span v-if="formatDate(resource.pubDate)" class="item-date">
+                  {{ formatDate(resource.pubDate) }}
+                </span>
               </div>
 
-              <div class="card-body">
-                <el-link
-                  class="card-title"
-                  :href="resource.cloudLinks[0]"
-                  target="_blank"
-                  :underline="false"
+              <a
+                class="item-title"
+                :href="resource.cloudLinks[0]"
+                target="_blank"
+                rel="noopener noreferrer"
+                :title="resource.title"
+              >
+                {{ resource.title }}
+              </a>
+
+              <p
+                v-if="htmlToText(resource.content)"
+                class="item-desc"
+                @click="showResourceDetail(resource)"
+              >
+                {{ htmlToText(resource.content) }}
+              </p>
+
+              <div v-if="resource.tags?.length" class="item-tags">
+                <button
+                  v-for="tag in resource.tags.slice(0, 4)"
+                  :key="tag"
+                  type="button"
+                  class="tag"
+                  @click="searchMovieforTag(tag)"
                 >
-                  {{ resource.title }}
-                </el-link>
+                  #{{ tag }}
+                </button>
+              </div>
 
-                <div
-                  class="card-content"
-                  @click="showResourceDetail(resource)"
-                  v-html="resource.content"
-                />
-
-                <div v-if="resource.tags?.length" class="card-tags">
-                  <div class="tags-list">
-                    <el-tag
-                      v-for="tag in resource.tags"
-                      :key="tag"
-                      class="tag-item"
-                      @click="searchMovieforTag(tag)"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                  </div>
-                </div>
-
-                <div class="card-footer">
-                  <FollowButton :resource="resource" />
-                  <el-button type="primary" plain @click="handleJump(resource)">跳转</el-button>
-                  <el-button
-                    v-if="resource.isSupportMagnet"
-                    type="warning"
-                    plain
-                    @click="handleCopyMagnet(resource)"
-                    >复制磁力</el-button
-                  >
-                  <el-button
-                    v-if="resource.isSupportMagnet"
-                    type="warning"
-                    @click="handle115Lixian(resource)"
-                    >115离线</el-button
-                  >
-                  <el-button
-                    v-if="resource.isSupportSave"
-                    type="primary"
-                    @click="handleSave(resource)"
-                    >转存</el-button
-                  >
-                </div>
+              <div class="item-actions">
+                <el-button
+                  v-if="resource.isSupportSave"
+                  type="primary"
+                  size="small"
+                  @click="handleSave(resource)"
+                >
+                  转存
+                </el-button>
+                <el-button
+                  v-if="resource.isSupportMagnet"
+                  type="warning"
+                  size="small"
+                  @click="handle115Lixian(resource)"
+                >
+                  115离线
+                </el-button>
+                <el-button size="small" @click="handleJump(resource)">打开</el-button>
+                <el-button
+                  v-if="resource.isSupportMagnet"
+                  size="small"
+                  @click="handleCopyMagnet(resource)"
+                >
+                  复制磁力
+                </el-button>
+                <FollowButton compact :resource="resource" />
               </div>
             </div>
-          </el-card>
+          </article>
         </div>
 
-        <div v-if="!group.id.startsWith('pansou_')" class="load-more">
+        <div v-if="isTelegramGroup(group.id)" class="load-more">
           <el-button :loading="group.loading" @click="handleLoadMore(group.id)">
-            <el-icon><Plus /></el-icon>
             加载更多
           </el-button>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import FollowButton from "@/components/FollowButton.vue";
 import { useResourceStore } from "@/stores/resource";
-import { ref } from "vue";
-import type { ResourceItem, TagColor } from "@/types";
-import { ArrowDown, Plus } from "@element-plus/icons-vue";
+import { reactive, ref } from "vue";
+import type { ResourceItem } from "@/types";
+import { ArrowDown } from "@element-plus/icons-vue";
 import { getProxyImageUrl } from "@/utils/image";
 import { copyMagnet } from "@/utils/magnet";
+import {
+  LINK_STATUS_LABEL,
+  LINK_STATUS_TONE,
+  cloudTypeLabel,
+  htmlToText,
+  resourceKey,
+} from "@/utils/resource";
 
 const store = useResourceStore();
-const linkStatusText = (status: ResourceItem["linkStatus"]): string => {
-  const labels: Record<string, string> = {
-    ok: "有效",
-    locked: "需提取码",
-    uncertain: "待确认",
-    unsupported: "未检测",
-    bad: "已失效",
-  };
-  return labels[status || ""] || "";
-};
-
-const linkStatusType = (status: ResourceItem["linkStatus"]): string => {
-  if (status === "ok") return "success";
-  if (status === "locked") return "warning";
-  if (status === "bad") return "danger";
-  return "info";
-};
 
 const showDetail = ref(false);
 const currentResource = ref<ResourceItem | null>(null);
+const brokenImages = reactive(new Set<string>());
 
 const emit = defineEmits(["save", "loadMore", "jump", "searchMovieforTag", "lixian"]);
+
+// PanSou 分组一次返回全部结果，也不是 TG 频道
+const isTelegramGroup = (id: string) => Boolean(id) && !id.startsWith("pansou_");
+
+const formatDate = (value?: string) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
 
 const getMagnet = (resource: ResourceItem) => {
   const list = store.extractMagnets(resource);
@@ -288,414 +294,328 @@ const handleLoadMore = (channelId: string) => {
 </script>
 
 <style lang="scss" scoped>
-@import "@/styles/common.scss";
-
 .resource-card {
-  position: relative;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-bottom: var(--space-6);
+}
 
-  // 资源组
-  .resource-group {
-    background: var(--theme-card-bg);
-    backdrop-filter: var(--theme-blur);
-    -webkit-backdrop-filter: var(--theme-blur);
-    margin-bottom: 24px;
-    border-radius: var(--theme-radius);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    transition: var(--theme-transition);
+// 分组
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  cursor: pointer;
+  user-select: none;
 
-    &:last-child {
-      margin-bottom: 100px;
-    }
-  }
-
-  // 组标题
-  .group-header {
-    @include flex-center;
-    justify-content: space-between;
-    padding: 12px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    position: sticky;
-    top: 0;
-    background: var(--theme-card-bg);
-    backdrop-filter: var(--theme-blur);
-    -webkit-backdrop-filter: var(--theme-blur);
-    z-index: 10;
-    border-radius: var(--theme-radius);
+  .group-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
     overflow: hidden;
-    cursor: pointer;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    flex: none;
 
-    &.is-active {
-      border-radius: var(--theme-radius) var(--theme-radius) 0 0;
-    }
-
-    .group-title {
-      @include flex-center;
-      gap: 12px;
-      font-size: 16px;
-      color: var(--theme-text-primary);
-      transition: var(--theme-transition);
-
-      .channel-logo {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        overflow: hidden;
-        box-shadow: var(--theme-shadow-sm);
-        margin-right: 8px;
-      }
-
-      .item-count {
-        font-size: 13px;
-        color: var(--theme-text-secondary);
-      }
-
-      &:hover {
-        color: var(--theme-primary);
-        transform: translateY(-1px);
-      }
-    }
-
-    .toggle-btn {
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      color: var(--theme-text-regular);
-      transition: var(--theme-transition);
-
-      .el-icon {
-        font-size: 16px;
-        transition: transform 0.3s ease;
-
-        &.is-active {
-          transform: rotate(180deg);
-        }
-      }
-
-      &:hover {
-        color: var(--theme-primary);
-        transform: translateY(-1px);
-      }
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
   }
 
-  // 组内容
-  .group-content {
-    padding: 20px;
+  .group-name {
+    font-size: var(--text-md);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
   }
 
-  // 卡片网格
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 24px;
-    grid-auto-rows: min-content;
+  .group-count {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--grey-200);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    line-height: 20px;
   }
 
-  // 资源卡片
-  .resource-card-item {
-    border-radius: var(--theme-radius);
-    transition: var(--theme-transition);
-    overflow: hidden;
-    max-width: 460px;
-    margin: 0 auto;
-    width: 100%;
-    height: fit-content;
+  .group-link {
+    margin-left: var(--space-1);
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+    text-decoration: none;
 
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--theme-shadow);
+      color: var(--primary-600);
+    }
+  }
+
+  .group-toggle {
+    margin-left: auto;
+    color: var(--text-tertiary);
+    transform: rotate(-90deg);
+    transition: transform var(--duration) var(--ease);
+
+    &.is-open {
+      transform: rotate(0);
+    }
+  }
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: var(--space-4);
+}
+
+// 单个资源
+.resource-item {
+  display: flex;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  transition:
+    box-shadow var(--duration) var(--ease),
+    border-color var(--duration) var(--ease);
+
+  &:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-2);
+  }
+
+  &.is-bad {
+    opacity: 0.6;
+  }
+}
+
+.item-cover {
+  flex: none;
+  width: 96px;
+  height: 136px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--grey-100);
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--primary-400);
+  background: linear-gradient(160deg, var(--primary-50), var(--primary-100));
+
+  &[data-type="magnet"],
+  &[data-type="ed2k"] {
+    color: var(--amber-500);
+    background: linear-gradient(160deg, hsl(43, 100%, 96%), var(--amber-100));
+  }
+
+  &[data-type="quark"] {
+    color: var(--violet-500);
+    background: linear-gradient(160deg, hsl(262, 90%, 98%), var(--violet-100));
+  }
+}
+
+.item-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  background: var(--grey-100);
+  color: var(--grey-600);
+
+  &--success {
+    background: var(--green-100);
+    color: var(--green-700);
+  }
+
+  &--warning {
+    background: var(--amber-100);
+    color: var(--amber-700);
+  }
+
+  &--danger {
+    background: var(--red-100);
+    color: var(--red-700);
+  }
+
+  &--type {
+    background: var(--primary-50);
+    color: var(--primary-700);
+
+    &[data-type="magnet"],
+    &[data-type="ed2k"] {
+      background: var(--amber-100);
+      color: var(--amber-700);
     }
 
-    .card-wrapper {
-      display: flex;
-      gap: 20px;
-      padding: 16px;
+    &[data-type="quark"] {
+      background: var(--violet-100);
+      color: var(--violet-700);
+    }
+  }
+}
+
+.item-date {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.item-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    color: var(--primary-600);
+  }
+}
+
+.item-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+
+  .tag {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary-600);
+    font-family: inherit;
+    font-size: var(--text-xs);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-1);
+
+  .el-button {
+    margin: 0;
+  }
+
+  &--dialog {
+    justify-content: flex-end;
+  }
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) 0 0;
+}
+
+// 详情弹窗
+.detail {
+  display: flex;
+  gap: var(--space-5);
+
+  &__cover {
+    flex: none;
+    width: 150px;
+    height: 216px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--grey-100);
+
+    img {
+      width: 100%;
       height: 100%;
-    }
-
-    .card-cover {
-      position: relative;
-      width: 120px;
-      height: 180px;
-      flex-shrink: 0;
-
-      .cover-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: var(--theme-radius);
-        cursor: pointer;
-        transition: opacity 0.3s ease;
-
-        &:hover {
-          opacity: 0.85;
-        }
-      }
-
-      .cloud-type {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        z-index: 1;
-      }
-
-      .link-status {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 1;
-      }
-    }
-
-    .card-body {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-
-      .card-title {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        font-size: 16px;
-        line-height: 1.5;
-        color: var(--theme-text-primary);
-        word-break: break-word;
-        height: 3em;
-        transition: var(--theme-transition);
-
-        &:hover {
-          color: var(--theme-primary);
-        }
-      }
-
-      .card-content {
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        font-size: 14px;
-        line-height: 1.6;
-        color: var(--theme-text-regular);
-        cursor: pointer;
-        transition: color 0.3s ease;
-
-        &:hover {
-          color: var(--theme-text-primary);
-        }
-      }
-
-      .card-tags {
-        margin-top: auto;
-        max-height: 88px;
-        overflow: hidden;
-
-        .tags-label {
-          font-size: 13px;
-          color: var(--theme-text-secondary);
-          margin-right: 8px;
-          display: block;
-          margin-bottom: 8px;
-        }
-
-        .tags-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          max-height: 72px;
-          overflow: hidden;
-
-          .tag-item {
-            cursor: pointer;
-            transition: var(--theme-transition);
-            margin: 0;
-            height: 24px;
-
-            &:hover {
-              color: var(--theme-primary);
-              border-color: var(--theme-primary);
-              transform: translateY(-1px);
-            }
-          }
-        }
-      }
-    }
-
-    .card-footer {
-      @include flex-center;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-
-      .el-button {
-        padding: 6px 12px;
-        font-size: 13px;
-        height: 32px;
-        min-width: 72px;
-        margin: 0;
-
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: var(--theme-shadow-sm);
-        }
-      }
+      object-fit: cover;
+      display: block;
     }
   }
 
-  // 加载更多
-  .load-more {
-    @include flex-center;
-    position: relative;
-    padding: 32px 0 8px;
-    margin-top: 16px;
-
-    &::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      height: 1px;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        var(--el-border-color-lighter) 20%,
-        var(--el-border-color-lighter) 80%,
-        transparent
-      );
-    }
-
-    .el-button {
-      min-width: 160px;
-      height: 40px;
-      border-radius: 20px;
-      font-size: 14px;
-      color: var(--theme-text-regular);
-      background: var(--theme-card-bg);
-      border: 1px solid var(--el-border-color-lighter);
-      transition: var(--theme-transition);
-      position: relative;
-      overflow: hidden;
-
-      &::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        transform: translateX(-100%);
-        transition: transform 0.6s ease;
-      }
-
-      &:hover {
-        color: var(--theme-primary);
-        border-color: var(--theme-primary);
-        background: var(--el-color-primary-light-9);
-
-        &::after {
-          transform: translateX(100%);
-        }
-      }
-
-      &.is-loading {
-        color: var(--theme-text-secondary);
-
-        &::after {
-          display: none;
-        }
-      }
-
-      .el-icon {
-        margin-right: 6px;
-        font-size: 16px;
-      }
-    }
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    flex: 1;
+    min-width: 0;
   }
 
-  // 详情弹窗样式
-  .resource-detail-dialog {
-    :deep(.el-dialog__body) {
-      padding: 20px;
-    }
-
-    .detail-content {
-      display: flex;
-      gap: 24px;
-    }
-
-    .detail-cover {
-      position: relative;
-      width: 200px;
-      flex-shrink: 0;
-
-      .cover-image {
-        width: 100%;
-        height: 300px;
-        border-radius: var(--theme-radius);
-        overflow: hidden;
-      }
-
-      .cloud-type {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        z-index: 1;
-      }
-    }
-
-    .detail-info {
-      flex: 1;
-      min-width: 0;
-
-      .detail-title {
-        font-size: 18px;
-        margin: 0 0 16px;
-        line-height: 1.5;
-        color: var(--theme-text-primary);
-      }
-
-      .detail-description {
-        font-size: 14px;
-        line-height: 1.6;
-        color: var(--theme-text-regular);
-        margin-bottom: 20px;
-      }
-
-      .detail-tags {
-        .tags-label {
-          font-size: 13px;
-          color: var(--theme-text-secondary);
-          margin-right: 8px;
-        }
-
-        .tags-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 8px;
-
-          .tag-item {
-            cursor: pointer;
-            transition: var(--theme-transition);
-
-            &:hover {
-              color: var(--theme-primary);
-              border-color: var(--theme-primary);
-              transform: translateY(-1px);
-            }
-          }
-        }
-      }
-    }
-
-    .dialog-footer {
-      display: flex;
-      justify-content: flex-end;
-      padding-top: 16px;
-    }
+  &__desc {
+    max-height: 320px;
+    margin: 0;
+    overflow-y: auto;
+    color: var(--text-secondary);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
   }
 }
 </style>

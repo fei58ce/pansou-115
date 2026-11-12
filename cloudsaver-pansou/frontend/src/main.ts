@@ -1,31 +1,25 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import ElementPlus from "element-plus";
-import "element-plus/dist/index.css";
-import * as ElementPlusIconsVue from "@element-plus/icons-vue";
-import zhCn from "element-plus/es/locale/lang/zh-cn";
 import { isMobileDevice } from "@/utils/index";
 import App from "./App.vue";
 import { Lazyload } from "vant";
 import "vant/es/notify/style";
 import "vant/es/dialog/style";
+import "vant/es/toast/style";
+// Element Plus 按需引入：模板里的组件样式由 unplugin 自动带上，脚本里直接调用的提示框要自己引样式
+import "element-plus/es/components/message/style/css";
+import "element-plus/es/components/message-box/style/css";
 import "@/styles/responsive.scss";
 import "@/styles/common.scss";
+import "@/styles/tokens.scss";
 
 import router from "./router/index";
 
 const app = createApp(App);
 
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component);
-}
-
 app.use(createPinia());
 app.use(Lazyload);
 app.use(router);
-app.use(ElementPlus, {
-  locale: zhCn,
-});
 
 app.mount("#app");
 

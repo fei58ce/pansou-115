@@ -1,61 +1,100 @@
 <template>
   <div class="douban-page">
-    <div class="movie-wall">
-      <div v-for="movie in doubanStore.hotList" :key="movie.id" class="movie-item">
-        <div class="movie-poster">
-          <el-image
-            class="movie-poster-img"
-            :src="getProxyImageUrl(movie.cover)"
-            fit="cover"
-            lazy
-            :alt="movie.title"
-            hide-on-click-modal
-            :preview-src-list="[getProxyImageUrl(movie.cover)]"
-          />
-          <div class="movie-rate">
-            {{ movie.rate }}
-          </div>
-          <div class="movie-poster-hover" @click="searchMovie(movie.title)">
-            <div class="movie-search">
-              <el-icon class="search_icon" size="28px"><Search /></el-icon>
-            </div>
-          </div>
-        </div>
-        <div class="movie-info">
-          <el-link :href="movie.url" target="_blank" :underline="false" class="movie-title">{{
-            movie.title
-          }}</el-link>
-        </div>
+    <div class="douban-page__header">
+      <div>
+        <h2 class="header__title">{{ currentCategory.label }}</h2>
+        <p class="header__desc">点海报直接搜索资源，点片名打开豆瓣页面</p>
+      </div>
+      <div class="segmented" role="group" aria-label="榜单">
+        <button
+          v-for="category in DOUBAN_CATEGORIES"
+          :key="category.label"
+          type="button"
+          :class="{ 'is-active': category === currentCategory }"
+          @click="switchCategory(category)"
+        >
+          {{ category.label }}
+        </button>
       </div>
     </div>
+
+    <div v-if="doubanStore.loading && !doubanStore.hotList.length" class="movie-wall">
+      <div v-for="n in 12" :key="n" class="movie-item">
+        <div class="movie-poster sk" />
+        <div class="sk sk--line" />
+      </div>
+    </div>
+
+    <div
+      v-else-if="doubanStore.hotList.length"
+      class="movie-wall"
+      :class="{ 'is-refreshing': doubanStore.loading }"
+    >
+      <div v-for="movie in doubanStore.hotList" :key="movie.id" class="movie-item">
+        <div class="movie-poster" @click="searchMovie(movie.title)">
+          <img :src="getProxyImageUrl(movie.cover)" :alt="movie.title" loading="lazy" />
+          <span v-if="Number(movie.rate)" class="movie-rate" :class="rateClass(movie.rate)">
+            {{ movie.rate }}
+          </span>
+          <div class="movie-poster-hover">
+            <span class="hover__btn">
+              <el-icon><Search /></el-icon>
+              搜索资源
+            </span>
+          </div>
+        </div>
+        <a
+          :href="movie.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="movie-title"
+          :title="movie.title"
+        >
+          {{ movie.title }}
+        </a>
+      </div>
+    </div>
+
+    <el-empty v-else description="豆瓣榜单暂时没取到，稍后刷新试试" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { Search } from "@element-plus/icons-vue";
 import { useDoubanStore } from "@/stores/douban";
 import { getProxyImageUrl } from "@/utils/image";
-interface CurrentParams {
-  type: string;
-  tag?: string;
-}
+import { DOUBAN_CATEGORIES, findDoubanCategory, type DoubanCategory } from "@/constants/douban";
+
 const router = useRouter();
 const route = useRoute();
-
-const routeParams = computed((): CurrentParams => ({ ...route.query }) as unknown as CurrentParams);
 const doubanStore = useDoubanStore();
-if (routeParams.value) {
-  doubanStore.setCurrentParams(routeParams.value);
-}
 
-watch(
-  () => routeParams.value,
-  () => {
-    console.log(routeParams.value);
-    doubanStore.setCurrentParams(routeParams.value);
-  }
+const currentCategory = computed(() =>
+  findDoubanCategory(route.query.type as string, route.query.tag as string)
 );
+
+// 离开页面（比如点海报去搜索）时路由参数也会变，那时不要再去取榜单
+watch(
+  currentCategory,
+  (category) => {
+    if (route.path !== "/douban") return;
+    doubanStore.setCurrentParams({ type: category.type, tag: category.tag });
+  },
+  { immediate: true }
+);
+
+const switchCategory = (category: DoubanCategory) => {
+  router.push({ path: "/douban", query: category.query });
+};
+
+const rateClass = (rate: string | number) => {
+  const value = Number(rate);
+  if (value >= 8) return "is-high";
+  if (value >= 6) return "is-mid";
+  return "is-low";
+};
 
 const searchMovie = (title: string) => {
   router.push({ path: "/resource", query: { keyword: title } });
@@ -63,135 +102,195 @@ const searchMovie = (title: string) => {
 </script>
 
 <style lang="scss" scoped>
-@import "@/styles/common.scss";
-@import "@/styles/responsive.scss";
-
 .douban-page {
-  height: calc(100vh - 180px);
+  height: 100%;
   overflow-y: auto;
 
-  &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
+  &__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+    .header__title {
+      margin: 0;
+      font-size: var(--text-xl);
+      font-weight: var(--weight-bold);
+      color: var(--text-primary);
+      line-height: var(--leading-tight);
+    }
 
-    &:hover {
-      background: rgba(0, 0, 0, 0.3);
+    .header__desc {
+      margin: var(--space-1) 0 0;
+      color: var(--text-tertiary);
+      font-size: var(--text-sm);
     }
   }
+}
 
-  &::-webkit-scrollbar-track {
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--grey-200);
+
+  button {
+    height: 30px;
+    padding: 0 var(--space-3);
+    border: none;
+    border-radius: 8px;
     background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: var(--theme-transition);
+
+    &.is-active {
+      background: var(--surface-raised);
+      color: var(--text-primary);
+      font-weight: var(--weight-medium);
+      box-shadow: var(--shadow-1);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
   }
 }
 
 .movie-wall {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 200px);
-  justify-content: space-between;
-  gap: 20px;
-  padding: 4px;
-}
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-5) var(--space-4);
+  padding-bottom: var(--space-6);
+  transition: opacity var(--duration) var(--ease);
 
-.movie-item {
-  width: 200px;
-  background: var(--theme-card-bg);
-  border-radius: var(--theme-radius);
-  box-shadow: var(--theme-shadow);
-  box-sizing: border-box;
-  padding: 12px;
-  transition: var(--theme-transition);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--theme-shadow-lg);
+  &.is-refreshing {
+    opacity: 0.6;
   }
 }
 
-.movie-poster-img {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  border-radius: var(--theme-radius);
-  overflow: hidden;
+.movie-item {
+  min-width: 0;
 }
 
-.movie-info {
-  padding: 12px 0 4px;
-  text-align: center;
-  width: 100%;
+.movie-poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--grey-200);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: box-shadow var(--duration) var(--ease);
 
-  .movie-title {
+  img {
     display: block;
-    font-size: 16px;
-    font-weight: bold;
-    color: var(--theme-text-primary);
-    transition: var(--theme-transition);
-    @include text-ellipsis;
-    max-width: 100%;
-    line-height: 1.2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s var(--ease);
+  }
 
-    &:hover {
-      color: var(--theme-primary);
+  &:hover {
+    box-shadow: var(--shadow-3);
+
+    img {
+      transform: scale(1.03);
+    }
+
+    .movie-poster-hover {
+      opacity: 1;
     }
   }
 }
 
-.movie-poster {
-  width: 100%;
-  height: 220px;
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--theme-radius);
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+.movie-rate {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  line-height: 20px;
+  color: #fff;
+  background: var(--grey-600);
+
+  &.is-high {
+    background: var(--green-500);
+  }
+
+  &.is-mid {
+    background: var(--amber-500);
+  }
 }
 
 .movie-poster-hover {
-  opacity: 0;
-  transition: opacity 0.3s ease;
   position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(2px);
+  padding-bottom: var(--space-4);
+  background: linear-gradient(to top, hsla(220, 38%, 13%, 0.75), transparent 60%);
+  opacity: 0;
+  transition: opacity var(--duration) var(--ease);
+
+  .hover__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 6px var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
 }
 
-.movie-poster:hover .movie-poster-hover {
-  opacity: 1;
-}
-
-.movie-rate {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: var(--theme-primary);
-  color: white;
-  padding: 0px 8px;
-  border-radius: var(--theme-radius-sm);
-  font-size: 14px;
-}
-
-.movie-search {
-  color: white;
-  border-radius: var(--theme-radius);
-  font-size: 14px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+.movie-title {
+  display: block;
+  margin-top: var(--space-2);
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &:hover {
-    transform: scale(1.1);
+    color: var(--primary-600);
+  }
+}
+
+.sk {
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--grey-100) 25%, var(--grey-200) 37%, var(--grey-100) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  box-shadow: none;
+
+  &--line {
+    width: 70%;
+    height: 16px;
+    margin-top: var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
   }
 }
 </style>

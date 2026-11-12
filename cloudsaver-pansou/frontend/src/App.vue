@@ -1,8 +1,12 @@
 <template>
-  <el-config-provider>
+  <el-config-provider :locale="zhCn">
     <router-view />
   </el-config-provider>
 </template>
+
+<script setup lang="ts">
+import zhCn from "element-plus/es/locale/lang/zh-cn";
+</script>
 
 <style>
 #app {
@@ -12,30 +16,17 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-:root {
-  --theme-color: #3e3e3e;
-  --theme-theme: #133ab3;
-  --theme-background: #fafafa;
-  --theme-other_background: #ffffff;
-}
 html,
 body {
   margin: 0;
   font-size: 15px;
-  font-family:
-    v-sans,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    Segoe UI,
-    sans-serif,
-    "Apple Color Emoji",
-    "Segoe UI Emoji",
-    Segoe UI Symbol;
+  font-family: var(--font-sans);
   line-height: 1.6;
-  color: var(--theme-color);
-  background-color: var(--theme-background);
+  color: var(--text-primary);
+  background-color: var(--surface);
   word-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -45,6 +36,11 @@ body {
   overflow: hidden;
 }
 
+input {
+  border: none;
+  outline: none;
+}
+
 /* 移动端全局样式 */
 @media screen and (max-width: 768px) {
   #app {
@@ -52,10 +48,13 @@ body {
     overflow-x: hidden;
   }
 
-  /* 统一按钮样式 */
-  .van-button {
+  /* 统一按钮样式：小号按钮保留自己的尺寸，圆角按钮保留圆角；用 :where 把优先级压到和 .van-button 一样，页面里自己写的按钮样式才能覆盖 */
+  .van-button:where(:not(.van-button--mini, .van-button--small)) {
     height: 40px;
     font-size: var(--font-size-base);
+  }
+
+  .van-button:where(:not(.van-button--mini, .van-button--small, .van-button--round)) {
     border-radius: var(--border-radius-base);
   }
 

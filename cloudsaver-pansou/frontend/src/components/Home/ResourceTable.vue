@@ -32,7 +32,7 @@
           </el-table-column>
           <el-table-column prop="title" label="描述">
             <template #default="{ row }">
-              <div class="item-description" v-html="row.content"></div>
+              <div class="item-description">{{ htmlToText(row.content) }}</div>
             </template>
           </el-table-column>
           <el-table-column prop="tags" label="标签">
@@ -51,10 +51,19 @@
               <span v-else>无</span>
             </template>
           </el-table-column>
-          <el-table-column label="云盘类型" width="120">
+          <el-table-column label="云盘类型" width="170">
             <template #default="{ row }">
-              <el-tag :type="store.tagColor[row.cloudType as keyof TagColor]" effect="dark" round>
-                {{ row.cloudType }}
+              <el-tag :type="store.tagColor[row.cloudType as keyof TagColor]" effect="light" round>
+                {{ cloudTypeLabel(row.cloudType) }}
+              </el-tag>
+              <el-tag
+                v-if="row.linkStatus"
+                class="status-tag"
+                :type="LINK_STATUS_TONE[row.linkStatus as LinkStatus]"
+                effect="light"
+                round
+              >
+                {{ LINK_STATUS_LABEL[row.linkStatus as LinkStatus] }}
               </el-tag>
             </template>
           </el-table-column>
@@ -113,6 +122,13 @@ import { useResourceStore } from "@/stores/resource";
 import type { ResourceItem, TagColor } from "@/types";
 import { getProxyImageUrl } from "@/utils/image";
 import { copyMagnet } from "@/utils/magnet";
+import {
+  LINK_STATUS_LABEL,
+  LINK_STATUS_TONE,
+  cloudTypeLabel,
+  htmlToText,
+  type LinkStatus,
+} from "@/utils/resource";
 
 const store = useResourceStore();
 const emit = defineEmits(["save", "loadMore", "searchMovieforTag", "jump", "lixian"]);
@@ -146,7 +162,24 @@ const searchMovieforTag = (tag: string) => {
 
 <style scoped>
 .resource-list-table {
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
+}
+
+.table-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-50);
+  color: var(--primary-400);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+.status-tag {
+  margin-left: var(--space-1);
 }
 
 .group-header {
