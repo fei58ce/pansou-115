@@ -65,7 +65,8 @@ const POSTER_CACHE_LIMIT = 2000;
 const POSTER_HIT_TTL = 24 * 60 * 60 * 1000;
 // 没查到海报的标题过一阵再查，TMDB/豆瓣可能只是当时没连上
 const POSTER_MISS_TTL = 30 * 60 * 1000;
-const LINK_CHECK_TIMEOUT = 12000;
+// 线上 115 探活偶尔要十几秒，超时就过滤不了坏链
+const LINK_CHECK_TIMEOUT = 30000;
 
 @injectable()
 export class PansouSearcher {
