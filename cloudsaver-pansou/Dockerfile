@@ -1,55 +1,40 @@
 # 构建前端项目
-FROM node:22-alpine as frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
-# 构建后端项目
-FROM node:22-alpine as backend-build
+# 构建后端项目：bcrypt / sqlite3 的原生模块在这里编译，打包后裁掉开发依赖
+FROM node:22-alpine AS backend-build
 WORKDIR /app
-# bcrypt / sqlite3 需要执行原生构建脚本
 RUN apk add --no-cache python3 make g++
 COPY backend/package.json backend/package-lock.json ./
 RUN npm install
 COPY backend/ ./
 RUN rm -f database.sqlite
-RUN npm run build
+RUN npm run build && npm prune --omit=dev
 
-# 生产环境镜像
+# 生产环境镜像：和构建阶段同一个基础镜像，原生模块直接复用，不带编译工具
 FROM node:22-alpine
 
-# 安装 Nginx 及 bcrypt/sqlite3 运行时构建依赖
-RUN apk add --no-cache nginx python3 make g++
+# Nginx 提供前端页面；tini 做 1 号进程，转发停止信号并回收僵尸进程
+RUN apk add --no-cache nginx tini
 
-# 设置工作目录
 WORKDIR /app
-
-# 创建配置和数据目录
 RUN mkdir -p /app/config /app/data
 
-# 复制前端构建产物到 Nginx
-COPY --from=frontend-build /app/dist /usr/share/nginx/html
-
-# 复制 Nginx 配置文件
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
+COPY --from=backend-build /app/package.json /app/.env.example ./
+COPY --from=backend-build /app/node_modules ./node_modules
+COPY --from=backend-build /app/dist ./dist
 
-# 复制后端构建产物到生产环境镜像
-COPY --from=backend-build /app /app
-
-# 安装生产环境依赖
-RUN npm install --omit=dev
-
-# 设置数据卷
-VOLUME ["/app/config", "/app/data"]
-
-# 暴露端口
-EXPOSE 8008
-
-# 启动脚本
 COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# 启动服务
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+VOLUME ["/app/config", "/app/data"]
+EXPOSE 8008
+
+ENTRYPOINT ["/sbin/tini", "--", "/app/docker-entrypoint.sh"]

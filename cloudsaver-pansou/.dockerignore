@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/dev-dist
+**/logs
+**/*.sqlite
+**/*.sqlite-journal
+backend/.env
+.git
+.github
+docs
