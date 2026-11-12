@@ -1,6 +1,6 @@
 # HANDOFF · 盘搜增强任务交接
 
-> 更新时间：2026-11-12（订阅追更、搜索图片修复、豆瓣榜单超时修复与搜索分组排序均已上线）
+> 更新时间：2026-11-12（订阅追更、搜索图片修复、豆瓣榜单超时修复、搜索分组排序、搜索提速与UI改版均已上线）
 > 工作区：`G:\work\盘搜`  
 > 主工程：`cloudsaver-pansou/`（基于 CloudSaver + PanSou）
 
@@ -41,7 +41,9 @@
 
 同日12:26Z（北京时间20:26）第三次上线：搜索提速、TG频道「加载更多」修复、静态资源gzip与缓存头、豆瓣Cookie改为环境变量并修好豆瓣补海报。核验时发现115探活超时被设成12秒，线上探活慢时会被截断、坏链漏过滤；13:09Z（北京时间21:09）第四次上线，把探活超时恢复为30秒。两次均已在线上核验，见第5节。
 
-功能提交：55e70fe（每日115订阅追更）、bb6c697（搜索结果中白名单外图床图片加载失败）、862ba65（图片代理跳转到内网的测试，仅测试代码）、4d372ce（豆瓣榜单缓存与卡住重试）、5c7fa71（搜索分组排序）、d7e7af1（搜索提速、加载更多、gzip、豆瓣Cookie改环境变量）、003889d（115探活超时恢复30秒）。线上镜像由 003889d 构建。服务器源码目录的内容与 003889d 一致，但从未经发布替换过的旧文件可能仍是 CRLF 换行。
+同日15:09Z（北京时间23:09）第五次上线：UI改版（方案B：统一设计变量，重做搜索、豆瓣、登录和布局）、Element Plus按需加载、删掉3.3MB无用图片和socket.io-client、补上PWA图标；优化清单5–9（115探活按链接缓存、TG频道顺序与5分钟分页缓存、豆瓣榜单启动预热、tini与优雅停机、镜像从559MB瘦身到217MB）。已在线上核验，见第5节。用户随后提出：搜索结果和搜索页默认展示都要让115资源靠前，见第7节第11项。
+
+功能提交：55e70fe（每日115订阅追更）、bb6c697（搜索结果中白名单外图床图片加载失败）、862ba65（图片代理跳转到内网的测试，仅测试代码）、4d372ce（豆瓣榜单缓存与卡住重试）、5c7fa71（搜索分组排序）、d7e7af1（搜索提速、加载更多、gzip、豆瓣Cookie改环境变量）、003889d（115探活超时恢复30秒）、dabf8c7（115探活按链接缓存、TG频道顺序与分页缓存、豆瓣预热）、3f17bd2（tini、优雅停机、镜像瘦身）、49a718d（删无用图片与socket.io-client、PWA图标）、499b172（UI改版、Element Plus按需加载）。线上镜像由 499b172 构建。服务器源码目录的内容与 499b172 一致；第五次替换的文件是 LF 换行，从未经发布替换过的旧文件可能仍是 CRLF。
 
 ### 4）已经完成
 
@@ -187,6 +189,36 @@
   5. 源码用对应时间戳的tgz还原，避免以后重建时带上新代码。
   - 这两次都没有改数据库结构，一般不用还原数据库。
 
+线上部署验收（2026-11-12第五次，备份时间戓20261112-1504）：
+
+- 内容：dabf8c7、3f17bd2、49a718d、499b172。服务器上更新40个文件，删除5张旧图（frontend/logo-1.png、frontend/logo.svg，以及frontend/src/assets/images/下的logo-1.png、login-bg.jpg、mobile-login-bg.png）。
+  - 替换前核对：要改、要删的39个旧文件与333bc83一致（部分只差在CRLF）。
+  - 替换后核对：40个文件与提交逐字节一致，docker-entrypoint.sh里没有CR。
+- 备份：
+  - 回滚镜像pansou115-cloudsaver:rollback-pre-ui-20261112-1504，即第四次的镜像3e2fce9e7b3b（559MB）。
+  - 源码归档/opt/pansou115/cloudsaver-pansou-src.bak-20261112-1504.tgz（不含node_modules）。
+  - 停机后复制的数据库data/cloudsaver/data/database.sqlite.bak-20261112-1504（数据库没有-wal/-journal文件）。
+- 切换前测试：新镜像先在临时容器里跑（空数据库、不开端口）。
+  - nginx -t通过，1号进程是tini。
+  - 首页、logo-192/512、manifest返回200；不存在的/assets/文件返回404；未登录搜索返回401。
+  - 豆瓣4个榜单启动后4秒内预热完。
+  - docker stop 1秒退出、退出码0（旧镜像要等10秒被强杀）。
+- 切换：新镜像7b1741e524da（217MB），15:09Z切换，停机约11秒。
+- 线上核验：
+  - 首页、logo-192.png、manifest返回200；未登录访问/api/search、/api/douban/hot返回401。
+  - 主JS 149kB（gzip 58kB，改版前约361kB），主CSS gzip 43kB（改版前约81kB）。
+  - 数据库各表行数与备份一致，quick_check=ok。
+  - 容器内带登录态搜「庆余年」，连搜两次：
+    - 第一次9.3秒。PanSou · 115网盘3条（2条加密、1条正常），后面是25个TG频道，最后是磁力组。
+    - 第二次1.6秒。115状态直接来自探活缓存，TG频道顺序与第一次相同。
+- 回滚（无需重建）：
+  1. cd /opt/pansou115
+  2. sudo docker compose stop cloudsaver
+  3. sudo docker tag pansou115-cloudsaver:rollback-pre-ui-20261112-1504 pansou115-cloudsaver:latest
+  4. sudo docker compose up -d --no-deps cloudsaver
+  5. 源码用cloudsaver-pansou-src.bak-20261112-1504.tgz还原，避免以后重建时带上新代码。
+  - 这次没有改数据库结构，一般不用还原数据库。
+
 ### 6）当前卡住/尚未闭环
 
 1. **已上线但未做真实转存验收**：线上0条订阅；需要用户选定第一部影片和专用115目录后，再验收增量转存、OneStrm通知和STRM。
@@ -206,10 +238,10 @@
     - 代码里已删除（d7e7af1），改为可选环境变量DOUBAN_COOKIE，线上没有配置。
     - 旧值仍在Git历史里。仓库若公开，建议先在豆瓣退出登录使它失效。
     - 交接文档、日志、回复里都不要复述它的值。
-13. **115探活耗时不稳定**：
+13. **115探活耗时不稳定（已改进，dabf8c7，第五次上线）**：
     - 同样是5条链接，有时2秒，有时超过12秒。
-    - 现在等30秒，与旧版相同；超过30秒仍会不标状态，坏链就漏过滤。
-    - 可选改进：按链接缓存探活结果，同一链接再搜不用再等。用户尚未决定做不做，可并入UI改版那批。
+    - 现在按链接缓存探活结果（正常、加密缓存1小时，失效缓存12小时，最多5000条），只把没缓存的链接发给PanSou；同一链接再搜不用再等。
+    - 最多等30秒；超时先返回结果（不标状态），后台继续探完写进缓存，下一次搜索就能过滤坏链。服务重启后缓存清空。
 
 ### 7）接下来按顺序做
 
@@ -222,7 +254,8 @@
 - [x] 7. 构建发布，确认订阅路由/四张新表/启动日志/下次Asia/Shanghai 18:00；验证现有搜索转存页面未损坏。（接口与真实搜索结果图片已核验；登录后的页面检查并入第8项）
 - [ ] 8. 线上只读验收空订阅页；不要自动创建用户真实关注。真实转存验收需要明确专用订阅与专用目录，或由用户选择第一部影片后验收。（数据库已确认0条订阅；页面需用户登录后确认）
 - [x] 9. 更新本节状态、提交号和部署验收结论；没有完成的项继续保留未勾选。
-- [ ] 10. UI改版（方案B：统一视觉规范并重做关键页面），连同优化清单5–9（进程信号与入口脚本、TG缓存与顺序、豆瓣预热、前端瘦身、Dockerfile瘦身）。用户要求改完先看改前/改后截图，确认后再一起提交、部署。frontend/src/styles/tokens.scss是未跟踪的草稿，尚未引入。
+- [x] 10. UI改版（方案B：统一视觉规范并重做关键页面），连同优化清单5–9（进程信号与入口脚本、TG缓存与顺序、豆瓣预热、前端瘦身、Dockerfile瘦身）和115探活按链接缓存。用户看过改前/改后截图并确认。（dabf8c7、3f17bd2、49a718d、499b172；第五次上线，见第5节）
+- [ ] 11. 115资源靠前（用户2026-11-12提出：主要用115资源；搜索结果和搜索页默认展示都要115优先）。现状：PanSou · 115网盘整组已在最前，但TG频道里115与其他网盘混在一起。做法待用户选定。
 
 ### 8）踩过的坑/接手注意
 
@@ -248,6 +281,12 @@
   - 脚本先上传到/tmp，由带ConnectTimeout、ServerAlive和重试的后台运行器执行。
   - PowerShell 5把带双引号的参数传给ssh时会拆错，远程命令里不要写双引号；复杂命令写成脚本上传后执行。
   - 构建等耗时步骤在服务器上用nohup后台跑并写日志，再轮询日志；不要让一次SSH会话撑完整个构建。
+  - SSH要指定密钥：-i %USERPROFILE%\.ssh\wb2api_vps138.key -o IdentitiesOnly=yes，不指定会Permission denied (publickey)。
+  - 停容器、切换这类中途断开会让服务停着的步骤，用sudo setsid nohup在服务器上跑，SSH断了也会跑完。
+- 本机git开了core.autocrlf=true，直接git archive会把文本文件转成CRLF（只有.gitattributes里的*.sh保持LF）。打发布包用git -c core.autocrlf=false archive，再逐个和git blob比对。
+- nginx把/api/xxx改写成/xxx再转给后端8009。容器内验收走http://127.0.0.1:8008/api/search；直接请求8009的/api/search会匹配不到路由。
+- 旧问题：backend/src/middleware/errorHandler.ts只有3个参数，Express把它当普通中间件。访问不存在的后端路径时会报“res.status is not a function”并返回500（不是404）。middleware/requestLogger.ts把对象传给logger.info，控制台只显示“info: [object Object]”。两个都未修。
+- 容器内带登录态验收搜索：在容器里用/app/dist/config的jwtSecret给现有用户签一个5分钟的JWT，脚本用完即删，不打印令牌和用户信息。
 
 ### 9）关键文件（全部位于主工程）
 
@@ -263,11 +302,13 @@
 - backend/src/services/ImageService.ts：白名单外图床走独立受限客户端（不走全局代理、最多3次跳转、10MB上限）。
 - backend/src/controllers/teleImages.ts：/tele-images放行规则（白名单优先，其余只放行搜索返回过的地址）。
 - backend/src/controllers/resource.ts：综合搜索的分组顺序（115最前、TG居中、磁力最后）；带lastMessageId的加载更多只翻对应TG频道；返回前记下频道头像与资源图片地址。
-- backend/src/services/PansouSearcher.ts：PanSou搜索与去重；补海报（最多等5秒，结果缓存）和115探活（30秒）同时进行。
+- backend/src/services/PansouSearcher.ts：PanSou搜索与去重；补海报（最多等5秒，结果缓存）和115探活同时进行。探活按链接缓存（正常/加密1小时、失效12小时），最多等30秒，超时后台探完写缓存。
+- backend/src/services/Searcher.ts：TG频道按配置顺序返回；同一关键词的频道分页缓存5分钟（最多300条），失败的不缓存。
+- docker-entrypoint.sh、Dockerfile（主工程根目录）：tini做1号进程；入口脚本转发停止信号，nginx或node任一退出就退出；后端npm prune --omit=dev，最终镜像不带编译工具。backend/src/app.ts收到SIGTERM/SIGINT先停接新请求，8秒内退出。
 - backend/tests/image-proxy.test.cjs：图片代理7项测试（npm run test:images）。
-- backend/src/services/DoubanService.ts：豆瓣榜单缓存、卡住重试、并发合并；海报查询6秒超时，读subject_suggest的img字段；Cookie只从可选环境变量DOUBAN_COOKIE读取。
-- backend/tests/douban.test.cjs：豆瓣6项测试（npm run test:douban）。
-- backend/tests/search-order.test.cjs：搜索分组排序与加载更多3项测试（npm run test:search）。
+- backend/src/services/DoubanService.ts：启动后预热菜单里的4个榜单（没取到的10分钟后重试）；豆瓣榜单缓存、卡住重试、并发合并；海报查询6秒超时，读subject_suggest的img字段；Cookie只从可选环境变量DOUBAN_COOKIE读取。
+- backend/tests/douban.test.cjs：豆瓣8项测试，含预热2项（npm run test:douban）。
+- backend/tests/search-order.test.cjs：搜索分组排序、加载更多、TG频道顺序与分页缓存、115探活缓存6项测试（npm run test:search）。
 - nginx.conf（主工程根目录，打进镜像）：容器内nginx的gzip、静态资源缓存头和/api反代。
 - 仓库根目录docker-compose.yml：cloudsaver可选DOUBAN_COOKIE。服务器上的compose文件含生产配置，不要用仓库版本覆盖。
 - backend/src/services/Cloud115Service.ts：目录选择分页及ID保护。
@@ -285,6 +326,9 @@
 - frontend/src/api/resource.ts：搜索请求单独等待60秒。
 - frontend/src/stores/resource.ts：加载更多按频道ID合并、按messageId去重；PanSou分组不翻页。
 - frontend/src/components/Home/ResourceCard.vue、ResourceTable.vue：PanSou分组不显示「加载更多」。
+- frontend/src/styles/tokens.scss：设计变量（颜色、圆角、阴影、间距），旧的--theme-*变量和Element Plus/Vant变量都映射到这里。global.scss通过@use注入每个文件，不能输出CSS。
+- frontend/src/main.ts、components.d.ts：Element Plus按需加载。ElMessage/ElMessageBox和Vant的notify/dialog/toast是函数式调用，样式要在main.ts里手动引入。
+- frontend/src/utils/resource.ts、frontend/src/constants/douban.ts：PC和手机共用的网盘类型工具和豆瓣榜单菜单。
 
 设计与计划：
 - G:\work\盘搜\docs\superpowers\specs\2026-11-12-subscription-auto-sync-design.md
