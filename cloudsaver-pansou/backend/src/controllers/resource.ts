@@ -84,7 +84,7 @@ export class ResourceController extends BaseController {
       }
 
       if (enableMagnet && magnetItems && magnetItems.length > 0) {
-        results.unshift({
+        results.push({
           id: "pansou_magnet",
           channelInfo: {
             channelId: "pansou_magnet",
