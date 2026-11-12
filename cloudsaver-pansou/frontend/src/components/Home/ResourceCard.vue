@@ -45,7 +45,7 @@
               class="tag"
               @click="searchMovieforTag(tag)"
             >
-              #{{ tag }}
+              {{ tagLabel(tag) }}
             </button>
           </div>
         </div>
@@ -175,7 +175,7 @@
                   class="tag"
                   @click="searchMovieforTag(tag)"
                 >
-                  #{{ tag }}
+                  {{ tagLabel(tag) }}
                 </button>
               </div>
 
@@ -236,6 +236,7 @@ import {
   htmlToText,
   isTelegramGroup,
   resourceKey,
+  tagLabel,
 } from "@/utils/resource";
 
 const store = useResourceStore();

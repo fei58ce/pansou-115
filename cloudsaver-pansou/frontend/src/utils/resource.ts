@@ -32,6 +32,9 @@ const CLOUD_TYPE_LABEL: Record<string, string> = {
 export const cloudTypeLabel = (type?: string): string =>
   CLOUD_TYPE_LABEL[type || ""] || type || "链接";
 
+/** 频道消息里的标签本身就带 # */
+export const tagLabel = (tag: string): string => `#${tag.replace(/^#+/, "")}`;
+
 const textCache = new Map<string, string>();
 
 /** 频道消息和 PanSou 备注是外部的 HTML，只取纯文本显示，不当 HTML 插进页面 */

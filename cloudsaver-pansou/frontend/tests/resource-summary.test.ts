@@ -5,6 +5,7 @@ import {
   SUMMARY_115_ID,
   appendToSummary115,
   resourceStats,
+  tagLabel,
   withSummary115,
 } from "../src/utils/resource.ts";
 
@@ -124,4 +125,9 @@ test("统计不重复算频道条目，PanSou 仍算一个来源", () => {
     total: 6,
     count115: 3,
   });
+});
+
+test("频道标签自带 # 时不再重复", () => {
+  assert.equal(tagLabel("#电视剧"), "#电视剧");
+  assert.equal(tagLabel("电影"), "#电影");
 });

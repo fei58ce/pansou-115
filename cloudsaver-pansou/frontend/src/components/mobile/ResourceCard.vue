@@ -51,7 +51,7 @@
               class="tag"
               @click.stop="searchMovieforTag(tag)"
             >
-              #{{ tag }}
+              {{ tagLabel(tag) }}
             </span>
           </div>
         </div>
@@ -100,6 +100,7 @@ import {
   htmlToText,
   isTelegramGroup,
   resourceKey,
+  tagLabel,
 } from "@/utils/resource";
 
 const props = defineProps<{
