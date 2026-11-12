@@ -1,11 +1,10 @@
 <template>
   <div class="login-page">
-    <div class="login-bg"></div>
     <div class="login-card">
       <div class="card-header">
         <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
-        <h1 class="title">欢迎回来</h1>
-        <p class="subtitle">登录您的账户以继续</p>
+        <h1 class="title">{{ PROJECT_NAME }}</h1>
+        <p class="subtitle">登录后即可搜索资源、追更和转存</p>
       </div>
 
       <el-tabs v-model="activeTab" class="login-tabs">
@@ -96,7 +95,7 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { User, Lock, Key } from "@element-plus/icons-vue";
 import { userApi } from "@/api/user";
-import "@/styles/common.scss";
+import { PROJECT_NAME } from "@/constants/project";
 import { STORAGE_KEYS } from "@/constants/storage";
 import type { FormItemRule } from "element-plus";
 
@@ -232,16 +231,18 @@ const handleRegister = async () => {
 </script>
 
 <style scoped lang="scss">
-@import "@/styles/common.scss";
-
 .login-page {
-  @include flex-center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 2rem 1rem;
+  padding: 32px 16px;
   overflow-y: auto;
-  background: var(--theme-bg);
-  position: relative;
+  background:
+    radial-gradient(circle at 15% 20%, hsla(0, 0%, 100%, 0.18), transparent 40%),
+    radial-gradient(circle at 85% 10%, hsla(262, 90%, 80%, 0.3), transparent 45%),
+    linear-gradient(150deg, var(--primary-700), var(--primary-500) 55%, var(--primary-400));
 }
 
 @media (max-height: 760px) {
@@ -250,116 +251,88 @@ const handleRegister = async () => {
   }
 }
 
-.login-bg {
-  position: fixed;
-  inset: 0;
-  background-image: url("@/assets/images/login-bg.jpg");
-  background-size: cover;
-  background-position: center;
-  filter: blur(0.2rem);
-  z-index: 0;
-}
-
 .login-card {
-  @include glass-effect;
-  position: relative;
   box-sizing: border-box;
-  width: 28rem;
+  width: 420px;
   max-width: 100%;
-  padding: 2.1333rem;
-  border-radius: var(--theme-radius);
-  box-shadow: var(--theme-shadow);
-  z-index: 1;
+  padding: 36px 36px 32px;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-4);
 }
 
 .card-header {
+  margin-bottom: 20px;
   text-align: center;
-  margin-bottom: 2.1333rem;
 
   .logo {
-    width: 4.2667rem;
-    height: 4.2667rem;
-    margin-bottom: 1.0667rem;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 12px;
+    border-radius: var(--radius);
   }
 
   .title {
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: var(--theme-text-primary);
-    margin-bottom: 0.5333rem;
+    margin: 0 0 6px;
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
   }
 
   .subtitle {
-    font-size: 0.9333rem;
-    color: var(--theme-text-secondary);
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
   }
 }
 
 .login-tabs {
-  :deep(.el-tabs__nav-wrap::after) {
-    display: none;
+  :deep(.el-tabs__header) {
+    margin-bottom: 20px;
   }
 
-  :deep(.el-tabs__active-bar) {
-    background-color: var(--theme-primary);
+  :deep(.el-tabs__nav-wrap::after) {
+    height: 1px;
+    background-color: var(--border);
   }
 
   :deep(.el-tabs__item) {
-    color: var(--theme-text-secondary);
-    font-size: 1.0667rem;
+    height: 44px;
+    font-size: var(--text-md);
+    color: var(--text-secondary);
 
     &.is-active {
-      color: var(--theme-primary);
-      font-weight: 500;
+      color: var(--primary-600);
+      font-weight: var(--weight-medium);
     }
+  }
+
+  :deep(.el-tabs__active-bar) {
+    background-color: var(--primary-600);
   }
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 1.6rem;
+  margin-bottom: 20px;
+}
 
-  .el-input__wrapper {
-    background-color: rgba(255, 255, 255, 0.5);
-    box-shadow: none;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    transition: var(--theme-transition);
-
-    &:hover {
-      border-color: var(--theme-primary);
-    }
-
-    &.is-focus {
-      border-color: var(--theme-primary);
-      box-shadow: 0 0 0 1px var(--theme-primary);
-    }
-  }
-
-  .el-input__inner {
-    height: 2.8rem;
-  }
+:deep(.el-input) {
+  --el-input-height: 44px;
+  font-size: var(--text-base);
 }
 
 .form-options {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.6rem;
+  justify-content: space-between;
+  margin: -4px 0 20px;
 }
 
 .submit-btn {
   width: 100%;
-  height: 2.8rem;
-  font-size: 1.0667rem;
-  border-radius: var(--theme-radius-sm);
-  background: var(--theme-primary);
-  transition: var(--theme-transition);
-
-  &:hover {
-    background: var(--theme-primary-hover);
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
+  height: 44px;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius);
 }
 </style>

@@ -14,14 +14,13 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["logo-1.png", "logo.svg"],
       injectRegister: "auto",
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,svg}"],
       },
       manifest: {
-        name: "CloudSaver",
-        short_name: "CloudSaver",
+        name: "自用影视搜索库",
+        short_name: "影视搜索",
         description: "网盘资源搜索工具",
         theme_color: "#ffffff",
         background_color: "#ffffff",
@@ -29,16 +28,8 @@ export default defineConfig({
         scope: "/",
         start_url: "/",
         icons: [
-          {
-            src: "logo-1.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "logo.svg",
-            sizes: "192x192",
-            type: "image/svg+xml",
-          },
+          { src: "logo-192.png", sizes: "192x192", type: "image/png" },
+          { src: "logo-512.png", sizes: "512x512", type: "image/png" },
         ],
       },
     }),

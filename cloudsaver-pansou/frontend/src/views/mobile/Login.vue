@@ -299,13 +299,14 @@ const registerCodeRules: FieldRule[] = [{ required: true, message: "请填写注
   width: 100%;
   overflow: hidden;
 
-  // 背景
+  // 背景：纯 CSS 渐变，不再加载大图
   &__background {
     position: absolute;
     inset: 0;
-    background: url("@/assets/images/mobile-login-bg.png") no-repeat;
-    background-size: 100% auto;
-    filter: blur(1px);
+    background:
+      radial-gradient(circle at 18% 22%, hsla(0, 0%, 100%, 0.22), transparent 38%),
+      radial-gradient(circle at 82% 8%, hsla(262, 90%, 80%, 0.35), transparent 42%),
+      linear-gradient(160deg, var(--primary-600), var(--primary-400));
   }
 
   // 主内容区
