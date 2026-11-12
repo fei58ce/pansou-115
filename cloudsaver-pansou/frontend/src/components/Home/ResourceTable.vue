@@ -28,6 +28,7 @@
               <el-link :href="row.cloudLinks[0]" target="_blank" style="font-weight: bold">
                 {{ row.title }}
               </el-link>
+              <div v-if="row.sourceName" class="item-source">来自 {{ row.sourceName }}</div>
             </template>
           </el-table-column>
           <el-table-column prop="title" label="描述">
@@ -92,7 +93,7 @@
             </template>
           </el-table-column>
         </el-table>
-        <div v-if="!props.row.id.startsWith('pansou_')" class="load-more">
+        <div v-if="isTelegramGroup(props.row.id)" class="load-more">
           <el-button :loading="props.row.loading" @click="handleLoadMore(props.row.id)">
             加载更多
           </el-button>
@@ -102,7 +103,9 @@
     <el-table-column label="来源" prop="channel">
       <template #default="{ row }">
         <div class="group-header">
+          <span v-if="row.id === SUMMARY_115_ID" class="channel-logo channel-logo--115">115</span>
           <el-image
+            v-else
             :src="getProxyImageUrl(row.channelInfo.channelLogo as string)"
             class="channel-logo"
             :fit="row.channelInfo.channelLogo ? 'cover' : 'contain'"
@@ -125,8 +128,10 @@ import { copyMagnet } from "@/utils/magnet";
 import {
   LINK_STATUS_LABEL,
   LINK_STATUS_TONE,
+  SUMMARY_115_ID,
   cloudTypeLabel,
   htmlToText,
+  isTelegramGroup,
   type LinkStatus,
 } from "@/utils/resource";
 
@@ -193,6 +198,21 @@ const searchMovieforTag = (tag: string) => {
   margin-right: 10px;
   border-radius: 50%;
   overflow: hidden;
+}
+.channel-logo--115 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--primary-500);
+  color: #fff;
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+}
+.item-source {
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
 }
 
 .table-item-image {

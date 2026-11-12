@@ -1,4 +1,4 @@
-﻿export interface ResourceItem {
+export interface ResourceItem {
   id: string;
   title: string;
   channel: string;
@@ -21,6 +21,9 @@
   /** 链接探活状态 */
   linkStatus?: "ok" | "bad" | "locked" | "unsupported" | "uncertain";
   linkStatusMessage?: string;
+  /** 只有 115 汇总里的条目有：原来所在的分组 */
+  sourceName?: string;
+  sourceId?: string;
 }
 
 export interface Resource {

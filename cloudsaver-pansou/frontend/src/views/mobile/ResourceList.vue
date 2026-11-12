@@ -55,14 +55,18 @@
       <div class="resource-list__summary">
         <template v-if="resourceStore.keyword">
           <span class="summary__title">「{{ resourceStore.keyword }}」</span>
-          <span class="summary__meta">
-            {{ resourceStore.resources.length }} 个来源 · 共 {{ totalCount }} 条
+          <span class="summary__meta"> {{ stats.sources }} 个来源 · 共 {{ stats.total }} 条 </span>
+          <span v-if="stats.count115" class="summary__meta summary__meta--115">
+            115 有 {{ stats.count115 }} 条
           </span>
         </template>
         <template v-else>
           <span class="summary__title">最新资源</span>
           <span v-if="resourceStore.lastUpdateTime" class="summary__meta">
             更新于 {{ resourceStore.lastUpdateTime }}
+          </span>
+          <span v-if="stats.count115" class="summary__meta summary__meta--115">
+            115 有 {{ stats.count115 }} 条
           </span>
           <van-icon name="replay" class="summary__refresh" @click="refreshResources" />
         </template>
@@ -268,6 +272,7 @@ import FolderSelect from "@/components/mobile/FolderSelect.vue";
 import ResourceSelect from "@/components/mobile/ResourceSelect.vue";
 import ResourceCard from "@/components/mobile/ResourceCard.vue";
 import { add115Lixian } from "@/utils/magnet";
+import { resourceStats, withSummary115 } from "@/utils/resource";
 
 // 状态管理
 const router = useRouter();
@@ -299,9 +304,7 @@ const getCurrentFolderName = computed(() => {
     : "待选择";
 });
 
-const totalCount = computed(() =>
-  resourceStore.resources.reduce((sum, group) => sum + group.list.length, 0)
-);
+const stats = computed(() => resourceStats(resourceStore.resources));
 
 // 常量定义
 const saveDialogMap = {
@@ -477,7 +480,7 @@ onMounted(() => {
   if (resourceStore.loading || resourceStore.keyword) return;
   const lastResourceList = localStorage.getItem("last_resource_list");
   if (lastResourceList) {
-    resourceStore.resources = JSON.parse(lastResourceList).list;
+    resourceStore.resources = withSummary115(JSON.parse(lastResourceList).list);
   }
 });
 
@@ -509,6 +512,11 @@ onBeforeUnmount(() => {
     .summary__meta {
       font-size: 12px;
       color: var(--text-tertiary);
+    }
+
+    .summary__meta--115 {
+      color: var(--primary-500);
+      font-weight: 600;
     }
 
     .summary__refresh {

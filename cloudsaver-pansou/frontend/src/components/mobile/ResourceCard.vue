@@ -26,6 +26,7 @@
             >
               {{ LINK_STATUS_LABEL[item.linkStatus] }}
             </span>
+            <span v-if="item.sourceName" class="m-item__source">来自 {{ item.sourceName }}</span>
           </div>
 
           <!-- 点标题复制链接 -->
@@ -97,6 +98,7 @@ import {
   LINK_STATUS_TONE,
   cloudTypeLabel,
   htmlToText,
+  isTelegramGroup,
   resourceKey,
 } from "@/utils/resource";
 
@@ -115,11 +117,10 @@ const store = useResourceStore();
 
 const group = computed(() => store.resources.find((item) => item.id === props.currentChannelId));
 const dataList = computed(() => group.value?.list || []);
-// PanSou 分组一次返回全部结果，TG 频道到底前都能继续翻
+// PanSou 分组和 115 汇总一次就是全部，TG 频道到底前都能继续翻
 const hasMorePages = computed(() => {
-  const id = group.value?.id || "";
   const last = dataList.value[dataList.value.length - 1];
-  return Boolean(id) && !id.startsWith("pansou_") && !last?.isLastMessage;
+  return isTelegramGroup(group.value?.id || "") && !last?.isLastMessage;
 });
 
 const handleSave = (resource: ResourceItem) => {
@@ -210,6 +211,16 @@ const toggleExpand = (id: string) => {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+
+  &__source {
+    align-self: center;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__title {

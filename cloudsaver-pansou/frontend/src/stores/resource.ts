@@ -12,6 +12,7 @@ import type {
   ShareFileInfoAndFolder,
 } from "@/types";
 import { ElMessage } from "element-plus";
+import { SUMMARY_115_ID, appendToSummary115, withSummary115 } from "@/utils/resource";
 
 interface StorageListObject {
   list: Resource[];
@@ -114,7 +115,7 @@ export const useResourceStore = defineStore("resource", {
     },
     keyword: "",
     recentKeywords: loadRecentKeywords(),
-    resources: lastResource.list,
+    resources: withSummary115(lastResource.list),
     lastUpdateTime: lastResource.lastUpdateTime || "",
     shareInfo: {} as ShareInfoResponse,
     resourceSelect: [] as ShareInfo[],
@@ -159,6 +160,8 @@ export const useResourceStore = defineStore("resource", {
 
     // 搜索资源
     async searchResources(keyword?: string, isLoadMore = false, channelId?: string): Promise<void> {
+      // 115 汇总是从各分组拼出来的，没有下一页；手机端滚到底也会走到这里
+      if (isLoadMore && channelId === SUMMARY_115_ID) return;
       // 加载更多只让对应分组显示加载中，不挡住整个页面
       const group = isLoadMore ? this.resources.find((x) => x.id === channelId) : undefined;
       if (group?.loading) return;
@@ -222,18 +225,25 @@ export const useResourceStore = defineStore("resource", {
           );
           if (fresh.length > 0) {
             list.push(...fresh);
+            if (group) appendToSummary115(this.resources, group, fresh);
           } else {
             list[list.length - 1] && (list[list.length - 1]!.isLastMessage = true);
             ElMessage.warning("没有更多了~");
           }
         } else {
-          this.resources = data.map((item, index) => ({ ...item, displayList: index === 0 }));
+          this.resources = withSummary115(data).map((item, index) => ({
+            ...item,
+            displayList: index === 0,
+          }));
           if (!keyword) {
-            // 获取当前时间字符串 用于存储到本地
+            // 获取当前时间字符串 用于存储到本地；汇总只是副本，不存，读取时重建
             this.lastUpdateTime = new Date().toLocaleString();
             localStorage.setItem(
               "last_resource_list",
-              JSON.stringify({ list: this.resources, lastUpdateTime: this.lastUpdateTime })
+              JSON.stringify({
+                list: this.resources.filter((item) => item.id !== SUMMARY_115_ID),
+                lastUpdateTime: this.lastUpdateTime,
+              })
             );
           }
           if (this.resources.length === 0) {

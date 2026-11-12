@@ -5,14 +5,18 @@
       <div class="toolbar__summary">
         <template v-if="resourceStore.keyword">
           <h2 class="summary__title">「{{ resourceStore.keyword }}」的搜索结果</h2>
-          <span class="summary__meta">
-            {{ resourceStore.resources.length }} 个来源 · 共 {{ totalCount }} 条
+          <span class="summary__meta"> {{ stats.sources }} 个来源 · 共 {{ stats.total }} 条 </span>
+          <span v-if="stats.count115" class="summary__meta summary__meta--115">
+            115 有 {{ stats.count115 }} 条
           </span>
         </template>
         <template v-else>
           <h2 class="summary__title">最新资源</h2>
           <span v-if="resourceStore.lastUpdateTime" class="summary__meta">
             更新于 {{ resourceStore.lastUpdateTime }}
+          </span>
+          <span v-if="stats.count115" class="summary__meta summary__meta--115">
+            115 有 {{ stats.count115 }} 条
           </span>
           <el-button text size="small" :icon="Refresh" @click="refreshResources">刷新</el-button>
         </template>
@@ -265,7 +269,7 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { ArrowUp, Loading, Picture, Refresh, Search } from "@element-plus/icons-vue";
 import { add115Lixian } from "@/utils/magnet";
-import { cloudTypeLabel, primaryLink } from "@/utils/resource";
+import { cloudTypeLabel, primaryLink, resourceStats, withSummary115 } from "@/utils/resource";
 const router = useRouter();
 
 const resourceStore = useResourceStore();
@@ -284,9 +288,7 @@ const lixianSubmitting = ref(false);
 const lixianNewName = ref("");
 
 const hasResults = computed(() => resourceStore.resources.length > 0);
-const totalCount = computed(() =>
-  resourceStore.resources.reduce((sum, group) => sum + group.list.length, 0)
-);
+const stats = computed(() => resourceStats(resourceStore.resources));
 
 const refreshResources = async () => {
   resourceStore.searchResources("", false);
@@ -415,7 +417,7 @@ onMounted(() => {
   if (resourceStore.loading || resourceStore.keyword) return;
   const lastResourceList = localStorage.getItem("last_resource_list");
   if (lastResourceList) {
-    resourceStore.resources = JSON.parse(lastResourceList).list;
+    resourceStore.resources = withSummary115(JSON.parse(lastResourceList).list);
   }
 });
 
@@ -460,6 +462,11 @@ onBeforeUnmount(() => {
     .summary__meta {
       color: var(--text-tertiary);
       font-size: var(--text-sm);
+    }
+
+    .summary__meta--115 {
+      color: var(--primary-600);
+      font-weight: var(--weight-bold);
     }
 
     .toolbar__actions {

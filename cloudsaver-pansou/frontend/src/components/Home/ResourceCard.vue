@@ -80,9 +80,10 @@
 
     <section v-for="group in store.resources" :key="group.id" class="resource-group">
       <header class="group-header" @click="group.displayList = !group.displayList">
-        <span class="group-avatar">
+        <span class="group-avatar" :class="{ 'group-avatar--115': group.id === SUMMARY_115_ID }">
+          <template v-if="group.id === SUMMARY_115_ID">115</template>
           <img
-            v-if="group.channelInfo.channelLogo"
+            v-else-if="group.channelInfo.channelLogo"
             :src="getProxyImageUrl(group.channelInfo.channelLogo)"
             alt=""
             loading="lazy"
@@ -139,6 +140,9 @@
                   :title="resource.linkStatusMessage"
                 >
                   {{ LINK_STATUS_LABEL[resource.linkStatus] }}
+                </span>
+                <span v-if="resource.sourceName" class="item-source" :title="resource.sourceName">
+                  来自 {{ resource.sourceName }}
                 </span>
                 <span v-if="formatDate(resource.pubDate)" class="item-date">
                   {{ formatDate(resource.pubDate) }}
@@ -227,8 +231,10 @@ import { copyMagnet } from "@/utils/magnet";
 import {
   LINK_STATUS_LABEL,
   LINK_STATUS_TONE,
+  SUMMARY_115_ID,
   cloudTypeLabel,
   htmlToText,
+  isTelegramGroup,
   resourceKey,
 } from "@/utils/resource";
 
@@ -239,9 +245,6 @@ const currentResource = ref<ResourceItem | null>(null);
 const brokenImages = reactive(new Set<string>());
 
 const emit = defineEmits(["save", "loadMore", "jump", "searchMovieforTag", "lixian"]);
-
-// PanSou 分组一次返回全部结果，也不是 TG 频道
-const isTelegramGroup = (id: string) => Boolean(id) && !id.startsWith("pansou_");
 
 const formatDate = (value?: string) => {
   if (!value) return "";
@@ -328,6 +331,12 @@ const handleLoadMore = (channelId: string) => {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    &--115 {
+      background: var(--primary-500);
+      color: #fff;
+      font-size: 10px;
     }
   }
 
@@ -496,6 +505,15 @@ const handleLoadMore = (channelId: string) => {
       color: var(--violet-700);
     }
   }
+}
+
+.item-source {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-date {
