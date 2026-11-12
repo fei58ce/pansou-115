@@ -5,6 +5,7 @@ import { Searcher } from "../services/Searcher";
 import { PansouSearcher } from "../services/PansouSearcher";
 import { BaseController } from "./BaseController";
 import { config } from "../config";
+import { rememberImageUrls } from "../utils/imageSources";
 
 /**
  * 支持通过 PanSou 检索的网盘类型
@@ -21,6 +22,8 @@ const PANSOU_CLOUD_TYPES: Record<string, string> = {
   pansou_pikpak: "pikpak",
   pansou_123: "123",
 };
+
+type ImageGroup = { channelInfo?: { channelLogo?: string }; list?: { image?: string }[] };
 
 @injectable()
 export class ResourceController extends BaseController {
@@ -40,7 +43,7 @@ export class ResourceController extends BaseController {
       if (channelId && PANSOU_CLOUD_TYPES[channelId as string]) {
         const cloudType = PANSOU_CLOUD_TYPES[channelId as string];
         const items = await this.pansouSearcher.search(keywordText, cloudType);
-        return {
+        return this.rememberImages({
           data: [
             {
               id: channelId as string,
@@ -52,7 +55,7 @@ export class ResourceController extends BaseController {
               list: items,
             },
           ],
-        };
+        });
       }
 
       // 默认并行调用：TG 频道 + PanSou 115 + PanSou magnet（如果启用）
@@ -92,8 +95,19 @@ export class ResourceController extends BaseController {
         });
       }
 
-      return { data: results };
+      return this.rememberImages({ data: results });
     });
+  }
+
+  // 图片代理只放行搜索结果里出现过的非白名单图床地址，这里记下本次返回的图片。
+  private rememberImages<T extends { data: ImageGroup[] }>(payload: T): T {
+    rememberImageUrls(
+      payload.data.flatMap((group) => [
+        group.channelInfo?.channelLogo,
+        ...(group.list || []).map((item) => item.image),
+      ])
+    );
+    return payload;
   }
 
   private cloudTypeLabel(type: string): string {

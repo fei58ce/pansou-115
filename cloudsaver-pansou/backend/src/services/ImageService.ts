@@ -1,9 +1,12 @@
 ﻿import { injectable } from "inversify";
 import axios, { AxiosInstance } from "axios";
+import http from "http";
+import https from "https";
 import tunnel from "tunnel";
 import GlobalSetting from "../models/GlobalSetting";
 import { GlobalSettingAttributes } from "../models/GlobalSetting";
 import { logger } from "../utils/logger";
+import { assertPublicHost, detectRasterImage, guardedLookup } from "../utils/imageSources";
 
 /**
  * 图片代理内存缓存（LRU）
@@ -20,10 +23,36 @@ interface CacheEntry {
 
 const CACHE_MAX_BYTES = 200 * 1024 * 1024; // 200MB
 const CACHE_ENTRY_TTL = 6 * 60 * 60 * 1000; // 6 小时
+const UNTRUSTED_MAX_BYTES = 10 * 1024 * 1024;
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+
+/**
+ * 白名单以外的图床：不走全局代理直连，每次连接（含重定向）都校验目标不是内网地址并限制大小；
+ * 返回内容由 getImageBuffer 按文件头确认是图片。
+ */
+function createUntrustedClient(): AxiosInstance {
+  const client = axios.create({
+    timeout: 20000,
+    maxRedirects: 3,
+    maxContentLength: UNTRUSTED_MAX_BYTES,
+    proxy: false,
+    httpAgent: new http.Agent({ lookup: guardedLookup }),
+    httpsAgent: new https.Agent({ lookup: guardedLookup }),
+    headers: { Accept: "image/avif,image/webp,image/*;q=0.8", "User-Agent": BROWSER_UA },
+    beforeRedirect: (options) => assertPublicHost(String(options.hostname || "")),
+  });
+  client.interceptors.request.use((config) => {
+    assertPublicHost(new URL(config.url || "").hostname);
+    return config;
+  });
+  return client;
+}
 
 @injectable()
 export class ImageService {
   private axiosInstance: AxiosInstance | null = null;
+  private untrusted = createUntrustedClient();
   private cache = new Map<string, CacheEntry>();
   private cacheBytes = 0;
 
@@ -36,8 +65,7 @@ export class ImageService {
         timeout: 30000,
         headers: {
           Accept: "image/*, */*",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          "User-Agent": BROWSER_UA,
         },
         withCredentials: false,
         maxRedirects: 5,
@@ -104,14 +132,15 @@ export class ImageService {
   }
 
   async getImageBuffer(
-    url: string
+    url: string,
+    untrusted = false
   ): Promise<{ buffer: Buffer; contentType: string; fromCache: boolean }> {
     const cached = this.cacheGet(url);
     if (cached) {
       return { buffer: cached.buffer, contentType: cached.contentType, fromCache: true };
     }
 
-    const axiosInstance = await this.ensureAxiosInstance();
+    const axiosInstance = untrusted ? this.untrusted : await this.ensureAxiosInstance();
     const response = await axiosInstance.get(url, {
       responseType: "arraybuffer",
       timeout: 20000,
@@ -121,8 +150,11 @@ export class ImageService {
       },
     });
 
-    const contentType = response.headers["content-type"] || "image/jpeg";
     const buffer = Buffer.from(response.data);
+    const contentType = untrusted
+      ? detectRasterImage(buffer)
+      : response.headers["content-type"] || "image/jpeg";
+    if (!contentType) throw new Error("图片地址返回的不是常见图片格式");
     this.cachePut(url, buffer, contentType);
     return { buffer, contentType, fromCache: false };
   }
