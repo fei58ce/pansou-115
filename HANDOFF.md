@@ -1,6 +1,6 @@
 # HANDOFF · 盘搜增强任务交接
 
-> 更新时间：2026-11-13（订阅追更、搜索图片修复、豆瓣榜单超时修复、搜索分组排序、搜索提速、UI改版、115资源汇总置顶与温柔线描UI改版均已上线）
+> 更新时间：2026-11-13（订阅追更、搜索图片修复、豆瓣榜单超时修复、搜索分组排序、搜索提速、UI改版、115资源汇总置顶、温柔线描UI改版与115汇总补海报修复均已上线）
 > 工作区：`G:\work\盘搜`  
 > 主工程：`cloudsaver-pansou/`（基于 CloudSaver + PanSou）
 
@@ -47,7 +47,9 @@
 
 2026-11-13 09:43Z（北京时间17:43）第七次上线：温柔线描UI改版。用moe-ui-skill的风格6「温柔线描」重做全站皮肤：暖白底、细线描边、略带手绘感的不对称圆角和胶囊按钮，配22张手绘webp素材（吉祥物、登录/空状态/追更插画、手机端标签栏和输入框图标）。电脑端的搜索、空状态、追更、豆瓣、设置、登录，手机端的首页、搜索结果、资源卡片、登录、豆瓣、TMDB、离线任务都换了皮。用户先确认了设计稿和素材（「按这套继续」），看过改前/改后/设计稿三栏对照后选「提交并部署」。只改前端的样式、模板和图片，接口与交互不变。已在线上核验，见第5节；和设计稿不一样的地方见第6节第15项。
 
-功能提交：55e70fe（每日115订阅追更）、bb6c697（搜索结果中白名单外图床图片加载失败）、862ba65（图片代理跳转到内网的测试，仅测试代码）、4d372ce（豆瓣榜单缓存与卡住重试）、5c7fa71（搜索分组排序）、d7e7af1（搜索提速、加载更多、gzip、豆瓣Cookie改环境变量）、003889d（115探活超时恢复30秒）、dabf8c7（115探活按链接缓存、TG频道顺序与分页缓存、豆瓣预热）、3f17bd2（tini、优雅停机、镜像瘦身）、49a718d（删无用图片与socket.io-client、PWA图标）、499b172（UI改版、Element Plus按需加载）、f865f27（115资源汇总置顶）、0d6cc4a（频道标签只显示一个#）、4e75c50（温柔线描UI改版）。线上镜像由 4e75c50 构建。服务器源码目录的内容与 4e75c50 一致；第五、六、七次替换的文件是 LF 换行，从未经发布替换过的旧文件可能仍是 CRLF。
+同日10:26Z（北京时间18:26）第八次上线：115资源汇总补海报修复。用户问「115资源汇总的为啥没有图」：汇总里没图的是PanSou的115结果（频道消息都有图）。这些结果本身多半不带海报，后端先把标题洗成片名再去TMDB/豆瓣补；原来的洗法把「庆余年.全46集.4K.国语中字.60.25GB【国产剧】」洗成「庆余年. . .国语中字.60.25GB」这类串，TMDB一条也查不到。用户选方案A「修洗标题规则」，规则见第4节；只改后端一个函数和测试，已在线上核验，见第5节；仍有的限制见第6节第16项。
+
+功能提交：55e70fe（每日115订阅追更）、bb6c697（搜索结果中白名单外图床图片加载失败）、862ba65（图片代理跳转到内网的测试，仅测试代码）、4d372ce（豆瓣榜单缓存与卡住重试）、5c7fa71（搜索分组排序）、d7e7af1（搜索提速、加载更多、gzip、豆瓣Cookie改环境变量）、003889d（115探活超时恢复30秒）、dabf8c7（115探活按链接缓存、TG频道顺序与分页缓存、豆瓣预热）、3f17bd2（tini、优雅停机、镜像瘦身）、49a718d（删无用图片与socket.io-client、PWA图标）、499b172（UI改版、Element Plus按需加载）、f865f27（115资源汇总置顶）、0d6cc4a（频道标签只显示一个#）、4e75c50（温柔线描UI改版）、64dcb77（PanSou补海报前洗标题）。线上镜像由 64dcb77 构建。服务器源码目录的内容与 64dcb77 一致；第五至八次替换的文件是 LF 换行，从未经发布替换过的旧文件可能仍是 CRLF。
 
 ### 4）已经完成
 
@@ -86,10 +88,24 @@
 - [x] 豆瓣（d7e7af1）：
   - 代码里不再写死Cookie，改为可选环境变量DOUBAN_COOKIE。服务器实测不带Cookie时榜单和补海报都正常，线上没有配置。
   - 补海报改读subject_suggest返回的img字段。旧代码读不存在的pic字段，豆瓣补海报一直没生效。
+- [x] PanSou补海报前洗标题（64dcb77，PansouSearcher.extractMediaTitle）：
+  - 括号、点号、竖线、斜杠、冒号、&、➕都当分隔；点号夹在两个数字中间时不算，保住60.25GB、5.1。
+  - 去掉开头的emoji和「电视剧｜」「【国产剧】」「动画电影｜」「4K」这类分类、画质标签。
+  - 从第一个发布信息起截掉：年份、第X季/集、全N集、S01E01、V2版、1080P/4K、文件大小、WEB-DL/H.265等英文标签、国语/中字等、纯净版、各版本。开头就是年份的算片名（如《1917》）。英文标签只按整词匹配，不再把Inferno切成「I erno」。
+  - 有中文名时只取第一个含汉字的词（「庆余年 Joy of Life」→「庆余年」，「流浪地球2：再次冒险」→「流浪地球2」）。
+  - 没有说明的链接（标题是「网盘分享 分享码」）不去查。TMDB/豆瓣的查询方式、补图最多等5秒、缓存时长都没改。
 
 ### 5）测试结果与证据
 
-2026-11-13最新重跑结果（第七次上线前，代码为4e75c50）：
+2026-11-13第八次上线前（代码为64dcb77，只改后端）：
+
+- npm run test:search：**8项通过、0失败**（原6项，加洗标题23个样例、没图的条目用洗过的片名只查一次海报且「网盘分享」不查）。
+- 后端其余测试douban、image-proxy、subscriptions一起跑：**41项通过、0失败**。
+- npm run lint：**0错误，18条warning**（与第七次相同）。
+- 上线前在线上容器里加载新编译的PansouSearcher（不替换线上代码），对8个关键词（庆余年、流浪地球、繁花、狂飙、漫长的季节、奥本海默、沙丘、哪吒）的70条PanSou 115结果比对：没图的6条，旧规则洗出的标题TMDB全部查不到，新规则6条都查到且对得上（庆余年2019×2、流浪地球2019×2、沙丘2021、哪吒之魔童降世2019）。
+- 前端没改，没有重跑前端构建和前端测试。
+
+2026-11-13全量重跑结果（第七次上线前，代码为4e75c50）：
 
 - npm run test:subscriptions：**26项通过、0失败**，该命令包含后端tsc。
 - npm run test:images：**7项通过、0失败**（白名单与搜索返回过的地址放行、非默认端口与带凭据地址拒绝、内网直连与跳转拦截、文件头识别）。
@@ -286,6 +302,31 @@
   5. 源码用cloudsaver-pansou-src.bak-20261113-0942.tgz还原，再删掉这次新增的frontend/src/assets/moe/和frontend/src/styles/theme.scss（解压旧归档不会删掉新增的文件），避免以后重建时带上新代码。
   - 这次没有改数据库结构，一般不用还原数据库。
 
+线上部署验收（2026-11-13第八次，备份时间戳20261113-1025）：
+
+- 内容：64dcb77（PanSou补海报前洗标题）。只改后端：服务器上替换backend/src/services/PansouSearcher.ts和backend/tests/search-order.test.cjs。
+  - 替换前核对：两个旧文件与4e75c50一致（按md5比对，忽略CR）；替换后与64dcb77逐字节一致。
+- 备份：
+  - 回滚镜像pansou115-cloudsaver:rollback-pre-poster-20261113-1025，即第七次的镜像fa892030f8bf。
+  - 源码归档/opt/pansou115/cloudsaver-pansou-src.bak-20261113-1025.tgz（不含node_modules，13MB）。
+  - 停机后复制的数据库data/cloudsaver/data/database.sqlite.bak-20261113-1025。
+- 构建：12秒，新镜像f1bfddd19229。镜像里编译后的PansouSearcher.js含新规则（RELEASE_INFO等名字旧镜像0处、新镜像6处）。
+- 切换前测试：临时容器里nginx -t通过，6个插画文件都在；首页、sw.js、manifest、logo-192返回200，不存在的/assets/文件404，未登录访问/api/search、/api/douban/hot返回401，侧栏插画200；日志12行，没有错误。
+- 切换：10:26Z（北京时间18:26），停机约15秒（从停容器算到新容器的/api/search返回401）。
+- 线上核验：
+  - 容器跑在f1bfddd19229上，挂载/app/data和/app/config；启动日志11行，没有错误；容器内请求结果与切换前测试相同。
+  - 数据库8张表的行数与停机备份一致，quick_check=ok。
+  - 带登录态搜索庆余年、流浪地球、沙丘、哪吒，每个搜两次：PanSou 115共28条，没图0条，其中5条用的是TMDB海报；重启后第一次搜就补上了。经站内图片代理取这些TMDB海报，3次都是200 image/jpeg。
+  - 从本机经代理访问线上站点：首页、CSS、主JS、sw.js、manifest、logo-192返回200，侧栏插画与提交里的文件一致，未登录访问/api/search返回401。
+  - 登录后的页面需用户确认。
+- 回滚（无需重建）：
+  1. cd /opt/pansou115
+  2. sudo docker compose stop cloudsaver
+  3. sudo docker tag pansou115-cloudsaver:rollback-pre-poster-20261113-1025 pansou115-cloudsaver:latest
+  4. sudo docker compose up -d --no-deps cloudsaver
+  5. 源码用cloudsaver-pansou-src.bak-20261113-1025.tgz还原（这次没有新增文件，解压即可），避免以后重建时带上新代码。
+  - 这次没有改数据库结构，一般不用还原数据库。
+
 ### 6）当前卡住/尚未闭环
 
 1. **已上线但未做真实转存验收**：线上0条订阅；需要用户选定第一部影片和专用115目录后，再验收增量转存、OneStrm通知和STRM。
@@ -318,6 +359,11 @@
     - 和设计稿有意不同的地方（用户看过三栏对照后同意上线）：「立即检查」保持原来的按钮层级，「关注影片」不染色；没有加「运行中断」高亮；二维码保留白底；夸克仍是紫色；设置页输入框前缀图标没换；页面密度按现有布局（设计稿是放大画的）；手机登录页另加了插画；theme-color改为#fbf8f4，浏览器标签页和PWA图标没换。
     - 改颜色、线条、圆角先改frontend/src/styles/tokens.scss的变量；Element Plus/Vant组件的线描皮肤在theme.scss；页面里只写布局和局部样式。
     - 素材是用图像生成接口出图后挑选、压成webp的，放在frontend/src/assets/moe/；设计稿和三栏对照页只在本机.tmp-ui-preview/（未提交）。
+16. **115汇总补海报（64dcb77，第八次上线）**：
+    - 只补PanSou结果里没带图的条目；频道消息的图来自TG，不经过这里。补图最多等5秒，没赶上的后台查完写缓存（查到的存24小时，没查到的过30分钟再查），下次搜同一部就有图。
+    - 洗标题后只取中文名的第一个词，副标题和「第二部」这类信息会丢，可能配到系列或第一部的海报（如「沙丘：预言」洗成「沙丘」，拿到2021年电影的海报）。标题里完全没有片名的条目仍然没图。
+    - 豆瓣补海报从服务器访问常超时（实测4次有3次8秒没返回），实际主要靠TMDB；TMDB Key在设置页配置。
+    - 要调规则改backend/src/services/PansouSearcher.ts顶部的RELEASE_INFO、LEADING_TAG、TITLE_SEPARATOR，样例加在backend/tests/search-order.test.cjs的洗标题测试里。
 
 ### 7）接下来按顺序做
 
@@ -333,6 +379,7 @@
 - [x] 10. UI改版（方案B：统一视觉规范并重做关键页面），连同优化清单5–9（进程信号与入口脚本、TG缓存与顺序、豆瓣预热、前端瘦身、Dockerfile瘦身）和115探活按链接缓存。用户看过改前/改后截图并确认。（dabf8c7、3f17bd2、49a718d、499b172；第五次上线，见第5节）
 - [x] 11. 115资源靠前（用户2026-11-12提出：主要用115资源；搜索结果和搜索页默认展示都要115优先）。用户选方案C「115汇总成一组置顶」，看过改前/改后截图（模拟数据）后确认。（f865f27、0d6cc4a；第六次上线，见第5节；规则与限制见第6节第14项）
 - [x] 12. 温柔线描UI改版：用户要求用moe-ui-skill改版，选了风格6「温柔线描」；设计稿和22张素材经用户确认（「按这套继续」），看过改前/改后/设计稿三栏对照后选「提交并部署」。（4e75c50；第七次上线，见第5节；和设计稿的取舍见第6节第15项）
+- [x] 13. 115资源汇总没图：用户问「115资源汇总的为啥没有图」，查明是PanSou结果补海报前洗标题出错，用户选方案A「修洗标题规则」。（64dcb77；第八次上线，见第5节；限制见第6节第16项）
 
 ### 8）踩过的坑/接手注意
 
@@ -368,6 +415,10 @@
 - 本机构建会改写frontend/components.d.ts和frontend/auto-imports.d.ts（曾删掉仍在用的ElMenu等声明）。这两个生成文件不要随功能提交，提交前用git checkout还原。
 - 本机PowerShell 5按ANSI读没有BOM的.ps1，脚本里的中文会乱码：脚本只写ASCII，正则里的中文写成\uXXXX。用-File传数组参数会变成一个字符串，要在脚本里按逗号拆。
 - Python的re把中文也算作单词字符，\b在中文和数字之间不成立。给输出打码时，IP要用(?<!\d)和(?!\d)这类前后断言，不能用\b，否则紧跟在中文后面的IP会漏掉。
+- PowerShell 5里git commit -m的内容带双引号会被拆成多个参数（报pathspec不匹配）。提交说明写进文件，用git commit -F。
+- backend/tests/*.test.cjs不是prettier格式（单引号、长行），lint也不查.cjs，不要对它们跑prettier --write，否则整文件重排。
+- scp上传偶尔卡住，留下0字节的文件。超时后先只读核对服务器上文件的大小和md5，再只重传缺的。
+- 想在不动线上的情况下试新后端代码：把本机编译的dist文件传进容器，用Module._compile按/app/dist/services下的路径加载，并先把require.cache里的TmdbService/DoubanService换成空类，免得加载数据库模型。
 
 ### 9）关键文件（全部位于主工程）
 
@@ -383,13 +434,13 @@
 - backend/src/services/ImageService.ts：白名单外图床走独立受限客户端（不走全局代理、最多3次跳转、10MB上限）。
 - backend/src/controllers/teleImages.ts：/tele-images放行规则（白名单优先，其余只放行搜索返回过的地址）。
 - backend/src/controllers/resource.ts：综合搜索的分组顺序（115最前、TG居中、磁力最后）；带lastMessageId的加载更多只翻对应TG频道；返回前记下频道头像与资源图片地址。
-- backend/src/services/PansouSearcher.ts：PanSou搜索与去重；补海报（最多等5秒，结果缓存）和115探活同时进行。探活按链接缓存（正常/加密1小时、失效12小时），最多等30秒，超时后台探完写缓存。
+- backend/src/services/PansouSearcher.ts：PanSou搜索与去重；补海报（最多等5秒，结果缓存）和115探活同时进行。补海报前用extractMediaTitle把资源名洗成片名（规则在文件顶部的RELEASE_INFO、LEADING_TAG、TITLE_SEPARATOR）。探活按链接缓存（正常/加密1小时、失效12小时），最多等30秒，超时后台探完写缓存。
 - backend/src/services/Searcher.ts：TG频道按配置顺序返回；同一关键词的频道分页缓存5分钟（最多300条），失败的不缓存。
 - docker-entrypoint.sh、Dockerfile（主工程根目录）：tini做1号进程；入口脚本转发停止信号，nginx或node任一退出就退出；后端npm prune --omit=dev，最终镜像不带编译工具。backend/src/app.ts收到SIGTERM/SIGINT先停接新请求，8秒内退出。
 - backend/tests/image-proxy.test.cjs：图片代理7项测试（npm run test:images）。
 - backend/src/services/DoubanService.ts：启动后预热菜单里的4个榜单（没取到的10分钟后重试）；豆瓣榜单缓存、卡住重试、并发合并；海报查询6秒超时，读subject_suggest的img字段；Cookie只从可选环境变量DOUBAN_COOKIE读取。
 - backend/tests/douban.test.cjs：豆瓣8项测试，含预热2项（npm run test:douban）。
-- backend/tests/search-order.test.cjs：搜索分组排序、加载更多、TG频道顺序与分页缓存、115探活缓存6项测试（npm run test:search）。
+- backend/tests/search-order.test.cjs：搜索分组排序、加载更多、TG频道顺序与分页缓存、115探活缓存、补海报洗标题8项测试（npm run test:search）。
 - nginx.conf（主工程根目录，打进镜像）：容器内nginx的gzip、静态资源缓存头和/api反代。
 - 仓库根目录docker-compose.yml：cloudsaver可选DOUBAN_COOKIE。服务器上的compose文件含生产配置，不要用仓库版本覆盖。
 - backend/src/services/Cloud115Service.ts：目录选择分页及ID保护。
