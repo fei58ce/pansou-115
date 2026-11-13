@@ -4,21 +4,31 @@
     <div v-if="hasResults && !resourceStore.loading" class="pc-resources__toolbar">
       <div class="toolbar__summary">
         <template v-if="resourceStore.keyword">
-          <h2 class="summary__title">「{{ resourceStore.keyword }}」的搜索结果</h2>
+          <h2 class="summary__title">
+            「{{ resourceStore.keyword }}」的搜索结果<img
+              :src="decoPopcorn"
+              alt=""
+              class="title-deco"
+            />
+          </h2>
           <span class="summary__meta"> {{ stats.sources }} 个来源 · 共 {{ stats.total }} 条 </span>
           <span v-if="stats.count115" class="summary__meta summary__meta--115">
             115 有 {{ stats.count115 }} 条
           </span>
         </template>
         <template v-else>
-          <h2 class="summary__title">最新资源</h2>
+          <h2 class="summary__title">
+            最新资源<img :src="decoPopcorn" alt="" class="title-deco" />
+          </h2>
           <span v-if="resourceStore.lastUpdateTime" class="summary__meta">
             更新于 {{ resourceStore.lastUpdateTime }}
           </span>
           <span v-if="stats.count115" class="summary__meta summary__meta--115">
             115 有 {{ stats.count115 }} 条
           </span>
-          <el-button text size="small" :icon="Refresh" @click="refreshResources">刷新</el-button>
+          <el-button text size="small" @click="refreshResources">
+            <img :src="iconRefresh" alt="" class="btn-icon" />刷新
+          </el-button>
         </template>
       </div>
 
@@ -32,8 +42,10 @@
           "
           placement="bottom"
         >
-          <el-button text size="small" :icon="Picture" @click="toggleImagesSource">
-            海报：{{ userStore.imagesSource === "proxy" ? "代理" : "直连" }}
+          <el-button text size="small" @click="toggleImagesSource">
+            <img :src="iconPicture" alt="" class="btn-icon" />海报：{{
+              userStore.imagesSource === "proxy" ? "代理" : "直连"
+            }}
           </el-button>
         </el-tooltip>
         <div class="segmented" role="group" aria-label="显示方式">
@@ -90,9 +102,7 @@
 
       <!-- 空状态 -->
       <div v-else class="pc-resources__empty">
-        <div class="empty__icon">
-          <el-icon><Search /></el-icon>
-        </div>
+        <img :src="sceneEmpty" alt="" class="empty__art" />
         <h2 class="empty__title">
           {{
             resourceStore.keyword ? `没有找到「${resourceStore.keyword}」的资源` : "搜索影视资源"
@@ -102,7 +112,7 @@
           {{
             resourceStore.keyword
               ? "换个关键词试试，比如去掉年份、季数，只留片名。"
-              : "在上方输入片名回车，搜索 115 网盘和磁力资源；粘贴 115 / 夸克分享链接可以直接解析转存。"
+              : "在上方输入片名回车，搜索 115 网盘和磁力资源；\n粘贴 115 / 夸克分享链接可以直接解析转存。"
           }}
         </p>
 
@@ -267,7 +277,11 @@ import { onMounted, onBeforeUnmount } from "vue";
 import ResourceCard from "@/components/Home/ResourceCard.vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { ArrowUp, Loading, Picture, Refresh, Search } from "@element-plus/icons-vue";
+import { ArrowUp, Loading } from "@element-plus/icons-vue";
+import decoPopcorn from "@/assets/moe/deco-popcorn.webp";
+import iconRefresh from "@/assets/moe/icon-refresh.webp";
+import iconPicture from "@/assets/moe/icon-picture.webp";
+import sceneEmpty from "@/assets/moe/scene-empty.webp";
 import { add115Lixian } from "@/utils/magnet";
 import { cloudTypeLabel, primaryLink, resourceStats, withSummary115 } from "@/utils/resource";
 const router = useRouter();
@@ -457,6 +471,18 @@ onBeforeUnmount(() => {
       font-weight: var(--weight-bold);
       color: var(--text-primary);
       line-height: var(--leading-tight);
+
+      .title-deco {
+        height: 28px;
+        margin-left: var(--space-1);
+        vertical-align: -5px;
+      }
+    }
+
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+      margin-right: var(--space-1);
     }
 
     .summary__meta {
@@ -490,10 +516,11 @@ onBeforeUnmount(() => {
     justify-content: center;
     width: 40px;
     height: 40px;
-    color: var(--primary-600);
+    color: var(--line);
     background: var(--surface-raised);
+    border: var(--line-width) solid var(--line);
     border-radius: var(--radius-full);
-    box-shadow: var(--shadow-3);
+    box-shadow: var(--shadow-2);
 
     .el-icon {
       font-size: 18px;
@@ -504,15 +531,16 @@ onBeforeUnmount(() => {
 // 卡片 / 列表切换
 .segmented {
   display: inline-flex;
-  padding: 2px;
-  border-radius: var(--radius);
-  background: var(--grey-200);
+  padding: 3px;
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-sketch-pill);
+  background: var(--surface-raised);
 
   button {
     height: 28px;
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-4);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sketch-pill);
     background: transparent;
     color: var(--text-secondary);
     font-family: inherit;
@@ -521,10 +549,9 @@ onBeforeUnmount(() => {
     transition: var(--theme-transition);
 
     &.is-active {
-      background: var(--surface-raised);
+      background: var(--pink-100);
       color: var(--text-primary);
-      font-weight: var(--weight-medium);
-      box-shadow: var(--shadow-1);
+      font-weight: var(--weight-bold);
     }
 
     &:focus-visible {
@@ -556,8 +583,8 @@ onBeforeUnmount(() => {
     gap: var(--space-4);
     padding: var(--space-4);
     background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border: var(--line-width) solid var(--border-strong);
+    border-radius: var(--radius-sketch);
   }
 
   .skeleton__body {
@@ -623,27 +650,22 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 560px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: var(--space-8) var(--space-4) var(--space-6);
+  padding: var(--space-5) var(--space-4) var(--space-6);
   text-align: center;
 
-  .empty__icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 64px;
-    height: 64px;
+  .empty__art {
+    width: 340px;
+    max-width: 100%;
     margin-bottom: var(--space-4);
-    border-radius: var(--radius-full);
-    background: var(--primary-100);
-    color: var(--primary-500);
-    font-size: 28px;
+    pointer-events: none;
+    user-select: none;
   }
 
   .empty__title {
-    margin: 0 0 var(--space-2);
-    font-size: var(--text-2xl);
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-3xl);
     font-weight: var(--weight-bold);
     color: var(--text-primary);
     line-height: var(--leading-tight);
@@ -651,9 +673,10 @@ onBeforeUnmount(() => {
 
   .empty__desc {
     margin: 0;
+    white-space: pre-line;
     text-wrap: balance;
-    color: var(--text-tertiary);
-    font-size: var(--text-base);
+    color: var(--text-secondary);
+    font-size: var(--text-md);
     line-height: var(--leading-normal);
   }
 
@@ -663,16 +686,16 @@ onBeforeUnmount(() => {
     padding: var(--space-4);
     text-align: left;
     background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border: var(--line-width) solid var(--line-soft);
+    border-radius: var(--radius-sketch);
 
     .recent__head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: var(--space-3);
-      color: var(--text-secondary);
-      font-size: var(--text-sm);
+      color: var(--text-primary);
+      font-size: var(--text-base);
       font-weight: var(--weight-medium);
     }
 
@@ -689,27 +712,28 @@ onBeforeUnmount(() => {
     margin-top: var(--space-5);
 
     .el-button {
+      height: 38px;
       margin: 0;
+      padding: 0 var(--space-5);
+      font-size: var(--text-base);
     }
   }
 }
 
 .chip {
-  height: 30px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  background: var(--grey-50);
-  color: var(--text-secondary);
+  height: 32px;
+  padding: 0 var(--space-4);
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-sketch-pill);
+  background: var(--surface-raised);
+  color: var(--text-primary);
   font-family: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   cursor: pointer;
   transition: var(--theme-transition);
 
   &:hover {
-    border-color: var(--primary-200);
-    background: var(--primary-50);
-    color: var(--primary-700);
+    background: var(--pink-50);
   }
 }
 
@@ -719,7 +743,7 @@ onBeforeUnmount(() => {
   background: none;
   color: var(--text-tertiary);
   font-family: inherit;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   cursor: pointer;
 
   &:hover {

@@ -7,11 +7,18 @@
           v-model="searchForm.keyword"
           class="header__search"
           shape="round"
+          :left-icon="iconSearch"
           placeholder="搜片名，或粘贴分享链接"
           @search="handleSearch"
         />
 
-        <van-icon name="user-circle-o" class="header__action" @click="handleLogout" />
+        <img
+          :src="mascotLogo"
+          alt="退出登录"
+          role="button"
+          class="header__avatar"
+          @click="handleLogout"
+        />
       </div>
     </header>
 
@@ -26,12 +33,12 @@
 
     <!-- 底部导航栏 -->
     <van-tabbar class="home__tabbar" route>
-      <van-tabbar-item to="/resource" icon="search">搜索</van-tabbar-item>
-      <van-tabbar-item to="/douban" icon="video-o">豆瓣</van-tabbar-item>
-      <van-tabbar-item to="/tmdb" icon="star-o">TMDB</van-tabbar-item>
-      <van-tabbar-item to="/subscriptions" icon="bookmark-o">追更</van-tabbar-item>
-      <van-tabbar-item to="/lixian" icon="todo-list-o">离线</van-tabbar-item>
-      <van-tabbar-item to="/setting" icon="setting-o">设置</van-tabbar-item>
+      <van-tabbar-item to="/resource" :icon="iconSearch">搜索</van-tabbar-item>
+      <van-tabbar-item to="/douban" :icon="iconClapper">豆瓣</van-tabbar-item>
+      <van-tabbar-item to="/tmdb" :icon="iconStar">TMDB</van-tabbar-item>
+      <van-tabbar-item to="/subscriptions" :icon="iconBell">追更</van-tabbar-item>
+      <van-tabbar-item to="/lixian" :icon="iconCloudBox">离线</van-tabbar-item>
+      <van-tabbar-item to="/setting" :icon="iconGear">设置</van-tabbar-item>
     </van-tabbar>
 
     <!-- 返回顶部 -->
@@ -45,6 +52,13 @@ import { useRouter, useRoute } from "vue-router";
 import { showConfirmDialog } from "vant";
 import { useResourceStore } from "@/stores/resource";
 import { useUserSettingStore } from "@/stores/userSetting";
+import mascotLogo from "@/assets/moe/mascot-logo.webp";
+import iconSearch from "@/assets/moe/icon-search.webp";
+import iconClapper from "@/assets/moe/icon-clapper.webp";
+import iconStar from "@/assets/moe/icon-star.webp";
+import iconBell from "@/assets/moe/icon-bell.webp";
+import iconCloudBox from "@/assets/moe/icon-cloud-box.webp";
+import iconGear from "@/assets/moe/icon-gear.webp";
 
 // 接口定义
 interface SearchForm {
@@ -127,8 +141,8 @@ const handleLogout = () => {
     left: 0;
     right: 0;
     z-index: 100;
-    background: var(--surface-raised);
-    box-shadow: 0 1px 0 var(--border);
+    background: var(--surface);
+    box-shadow: 0 1px 0 var(--border-strong);
 
     .header__wrapper {
       display: flex;
@@ -140,16 +154,27 @@ const handleLogout = () => {
       flex: 1;
       padding: 0 4px;
       background: transparent;
+
+      :deep(.van-search__content) {
+        background: var(--surface-raised);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+      }
     }
 
-    .header__action {
-      padding: 6px;
-      color: var(--text-secondary);
-      font-size: 24px;
-      line-height: 1;
+    .header__avatar {
+      flex: none;
+      box-sizing: border-box;
+      width: 36px;
+      height: 36px;
+      margin-left: 4px;
+      padding: 2px;
+      border: 1.5px solid var(--line);
+      border-radius: 50%;
+      background: var(--pink-50);
+      object-fit: contain;
 
       &:active {
-        color: var(--primary-500);
+        opacity: 0.7;
       }
     }
   }
@@ -176,14 +201,18 @@ const handleLogout = () => {
 
 :deep(.van-tabbar) {
   background: var(--surface-raised);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-strong);
 }
 
 :deep(.van-tabbar-item) {
-  color: var(--text-tertiary);
+  margin: 4px 2px;
+  border-radius: var(--radius-sketch-sm);
+  color: var(--text-secondary);
 }
 
 :deep(.van-tabbar-item--active) {
-  color: var(--primary-500);
+  background: var(--pink-100);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 </style>

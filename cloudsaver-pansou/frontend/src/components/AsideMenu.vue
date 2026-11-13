@@ -2,7 +2,7 @@
   <div class="pc-aside">
     <!-- Logo 区域 -->
     <div class="pc-aside__logo">
-      <img :src="logo" alt="" class="logo__image" />
+      <img :src="mascotLogo" alt="" class="logo__image" />
       <span class="logo__title">{{ PROJECT_NAME }}</span>
     </div>
 
@@ -16,7 +16,7 @@
         <!-- 子菜单 -->
         <el-sub-menu v-if="menu.children" :index="menu.index">
           <template #title>
-            <el-icon><component :is="menu.icon" /></el-icon>
+            <img :src="menu.icon" alt="" class="menu-icon" />
             <span>{{ menu.title }}</span>
           </template>
 
@@ -37,11 +37,13 @@
           :disabled="menu.disabled"
           @click="handleMenuClick(menu)"
         >
-          <el-icon><component :is="menu.icon" /></el-icon>
+          <img :src="menu.icon" alt="" class="menu-icon" />
           <span>{{ menu.title }}</span>
         </el-menu-item>
       </template>
     </el-menu>
+
+    <img :src="mascotSidebar" alt="" class="pc-aside__mascot" />
 
     <!-- GitHub 链接 -->
     <div class="pc-aside__footer">
@@ -62,8 +64,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Bell, Search, Film, Star, List, Setting } from "@element-plus/icons-vue";
-import logo from "@/assets/images/logo.png";
+import mascotLogo from "@/assets/moe/mascot-logo.webp";
+import mascotSidebar from "@/assets/moe/mascot-sidebar.webp";
+import iconBell from "@/assets/moe/icon-bell.webp";
+import iconSearch from "@/assets/moe/icon-search.webp";
+import iconClapper from "@/assets/moe/icon-clapper.webp";
+import iconStar from "@/assets/moe/icon-star.webp";
+import iconCloudBox from "@/assets/moe/icon-cloud-box.webp";
+import iconGear from "@/assets/moe/icon-gear.webp";
 import { PROJECT_GITHUB, PROJECT_NAME } from "@/constants/project";
 import pkg from "../../package.json";
 
@@ -71,7 +79,7 @@ import pkg from "../../package.json";
 interface MenuItem {
   index: string;
   title: string;
-  icon?: typeof Search;
+  icon?: string;
   router?: string;
   children?: MenuItem[];
   disabled?: boolean;
@@ -83,17 +91,17 @@ const route = useRoute();
 
 // 菜单配置
 const menuList: MenuItem[] = [
-  { index: "subscriptions", title: "我的追更", icon: Bell, router: "/subscriptions" },
+  { index: "subscriptions", title: "我的追更", icon: iconBell, router: "/subscriptions" },
   {
     index: "1",
     title: "资源搜索",
-    icon: Search,
+    icon: iconSearch,
     router: "/resource",
   },
   {
     index: "2",
     title: "豆瓣榜单",
-    icon: Film,
+    icon: iconClapper,
     children: [
       {
         index: "2-1",
@@ -120,19 +128,19 @@ const menuList: MenuItem[] = [
   {
     index: "3",
     title: "TMDB榜单",
-    icon: Star,
+    icon: iconStar,
     router: "/tmdb",
   },
   {
     index: "4",
     title: "115离线任务",
-    icon: List,
+    icon: iconCloudBox,
     router: "/lixian",
   },
   {
     index: "5",
     title: "设置",
-    icon: Setting,
+    icon: iconGear,
     router: "/setting",
     disabled: false,
   },
@@ -180,21 +188,20 @@ const handleMenuClick = (menu: MenuItem) => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--surface-raised);
+  background: var(--surface);
   border-right: 1px solid var(--border);
 
   &__logo {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
     height: 64px;
-    padding: 0 var(--space-5);
+    padding: 0 var(--space-4);
     flex: none;
 
     .logo__image {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-sm);
+      width: 44px;
+      height: 44px;
       object-fit: contain;
     }
 
@@ -219,20 +226,27 @@ const handleMenuClick = (menu: MenuItem) => {
     --el-menu-sub-item-height: 38px;
     --el-menu-base-level-padding: 14px;
     --el-menu-level-padding: 16px;
-    --el-menu-text-color: var(--text-secondary);
-    --el-menu-hover-bg-color: var(--grey-100);
-    --el-menu-active-color: var(--primary-600);
+    --el-menu-text-color: var(--text-primary);
+    --el-menu-hover-text-color: var(--text-primary);
+    --el-menu-hover-bg-color: var(--pink-50);
+    --el-menu-active-color: var(--text-primary);
 
     :deep(.el-menu-item),
     :deep(.el-sub-menu__title) {
       margin: 2px 0;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-sketch-sm);
       font-size: var(--text-base);
     }
 
     :deep(.el-menu-item.is-active) {
-      background: var(--primary-50);
-      font-weight: var(--weight-medium);
+      background: var(--pink-100);
+      font-weight: var(--weight-bold);
+    }
+
+    // 子菜单里有选中项时，父级标题也铺一层浅粉
+    :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+      background: var(--pink-50);
+      font-weight: var(--weight-bold);
     }
 
     :deep(.el-menu--inline) {
@@ -243,10 +257,31 @@ const handleMenuClick = (menu: MenuItem) => {
       padding-left: 46px !important;
     }
 
-    :deep(.el-icon) {
-      font-size: 18px;
+    :deep(.el-sub-menu__icon-arrow) {
+      color: var(--line);
+    }
+
+    .menu-icon {
+      flex: none;
+      width: 22px;
+      height: 22px;
       margin-right: var(--space-3);
-      color: inherit;
+    }
+  }
+
+  &__mascot {
+    flex: none;
+    display: block;
+    width: 176px;
+    margin: 0 auto var(--space-2);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  // 窗口矮的时候把位置让给菜单
+  @media (max-height: 760px) {
+    &__mascot {
+      display: none;
     }
   }
 

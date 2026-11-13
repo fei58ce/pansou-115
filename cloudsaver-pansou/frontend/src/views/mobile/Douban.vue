@@ -40,7 +40,7 @@
           <span v-if="Number(movie.rate)" class="poster__rate" :class="rateClass(movie.rate)">
             {{ movie.rate }}
           </span>
-          <span class="poster__search"><van-icon name="search" /></span>
+          <span class="poster__search"><img :src="iconSearch" alt="" /></span>
         </div>
         <a :href="movie.url" target="_blank" rel="noopener noreferrer" class="douban__title">
           {{ movie.title }}
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import iconSearch from "@/assets/moe/icon-search.webp";
 import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDoubanStore } from "@/stores/douban";
@@ -118,17 +119,17 @@ const rateClass = (rate: string | number) => {
 
     .tabs__item {
       flex: none;
-      padding: 6px 14px;
-      border-radius: 16px;
+      padding: 5px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-sketch-pill);
       background: var(--surface-raised);
       color: var(--text-secondary);
       font-size: 13px;
-      box-shadow: var(--shadow-1);
 
       &.is-active {
-        background: var(--primary-500);
-        color: #fff;
-        font-weight: 500;
+        background: var(--pink-100);
+        color: var(--text-primary);
+        font-weight: 600;
       }
     }
   }
@@ -159,7 +160,8 @@ const rateClass = (rate: string | number) => {
     position: relative;
     aspect-ratio: 2 / 3;
     overflow: hidden;
-    border-radius: 8px;
+    border: 1.5px solid var(--line-soft);
+    border-radius: var(--radius-sketch-sm);
     background: var(--grey-200);
     box-shadow: var(--shadow-1);
 
@@ -173,20 +175,23 @@ const rateClass = (rate: string | number) => {
       position: absolute;
       top: 6px;
       right: 6px;
-      padding: 0 5px;
-      border-radius: 4px;
-      background: var(--grey-600);
-      color: #fff;
+      padding: 0 6px;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-full);
+      background: var(--grey-100);
+      color: var(--text-primary);
       font-size: 11px;
       font-weight: 600;
-      line-height: 18px;
+      line-height: 16px;
 
       &.is-high {
-        background: var(--green-500);
+        background: var(--primary-100);
+        color: var(--primary-800);
       }
 
       &.is-mid {
-        background: var(--amber-500);
+        background: var(--pink-100);
+        color: var(--pink-700);
       }
     }
 
@@ -199,10 +204,15 @@ const rateClass = (rate: string | number) => {
       justify-content: center;
       width: 24px;
       height: 24px;
+      box-sizing: border-box;
+      border: 1.5px solid var(--line);
       border-radius: 50%;
-      background: hsla(0, 0%, 100%, 0.92);
-      color: var(--primary-600);
-      font-size: 13px;
+      background: hsla(40, 60%, 99%, 0.92);
+
+      img {
+        width: 14px;
+        height: 14px;
+      }
     }
   }
 

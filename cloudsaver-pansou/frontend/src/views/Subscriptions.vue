@@ -1,9 +1,12 @@
 <template>
   <section class="follow-page">
     <header class="follow-header">
-      <div>
-        <h2>我的追更</h2>
-        <p>每天北京时间18:00检查一次 · 仅补缺集 · 不删除或覆盖旧文件</p>
+      <div class="follow-header__title">
+        <img :src="decoClock" alt="" class="title-deco" />
+        <div>
+          <h2>我的追更</h2>
+          <p>每天北京时间18:00检查一次 · 仅补缺集 · 不删除或覆盖旧文件</p>
+        </div>
       </div>
       <button @click="create">＋ 关注影片</button>
     </header>
@@ -19,7 +22,9 @@
     <article v-for="item in items" :key="item.id" class="follow-card">
       <div class="follow-title">
         <h3>{{ item.config.title }} · 第{{ item.config.season }}季</h3>
-        <strong>{{ item.enabled ? "追更中" : "已暂停" }}</strong>
+        <strong :class="{ 'is-paused': !item.enabled }">{{
+          item.enabled ? "追更中" : "已暂停"
+        }}</strong>
       </div>
       <p>
         保存至：{{ item.config.targetPath }} <small>（ID: {{ item.config.targetCid }}）</small>
@@ -196,6 +201,7 @@ import {
 } from "@/api/subscriptions";
 import { cloud115Api } from "@/api/cloud115";
 import type { Folder } from "@/types";
+import decoClock from "@/assets/moe/deco-clock.webp";
 const route = useRoute();
 const router = useRouter();
 const items = ref<Follow[]>([]),
@@ -369,8 +375,30 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: auto;
-  color: #263445;
-  background: #f6f8fb;
+  color: var(--text-primary);
+  background: var(--surface);
+}
+.follow-header__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.follow-header__title h2 {
+  margin: 0 0 4px;
+}
+.follow-header__title p {
+  margin: 0;
+}
+.follow-header {
+  margin-bottom: 12px;
+}
+.title-deco {
+  flex: none;
+  height: 64px;
+}
+.follow-header p,
+.tools span {
+  color: var(--text-secondary);
 }
 .follow-header,
 .follow-title,
@@ -391,13 +419,22 @@ p {
   overflow-wrap: anywhere;
 }
 button {
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  padding: 0.6em 0.9em;
-  border-radius: 0.45em;
+  border: 1.5px solid var(--line);
+  background: var(--surface-raised);
+  padding: 0.55em 1.1em;
+  border-radius: var(--radius-sketch-pill);
   cursor: pointer;
-  color: #1853a0;
+  color: var(--text-primary);
   font: inherit;
+  font-weight: 500;
+  transition: var(--theme-transition);
+}
+button:hover:not(:disabled) {
+  background: var(--pink-50);
+}
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 button:disabled {
   opacity: 0.5;
@@ -415,17 +452,26 @@ button:disabled {
   font-size: 0.85rem;
 }
 .follow-card {
-  padding: 1rem;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.8rem;
+  padding: 1rem 1.2rem;
+  background: var(--surface-raised);
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-sketch);
+  box-shadow: var(--shadow-1);
   margin-bottom: 1rem;
 }
 strong {
-  color: #197346;
+  padding: 2px 12px;
+  border-radius: var(--radius-full);
+  background: var(--green-100);
+  color: var(--green-700);
+  font-size: 0.85rem;
+}
+strong.is-paused {
+  background: var(--grey-200);
+  color: var(--text-secondary);
 }
 .error {
-  color: #b42318;
+  color: var(--red-700);
 }
 .empty {
   padding: 2rem;
@@ -434,7 +480,7 @@ strong {
 .follow-overlay {
   position: fixed;
   inset: 0;
-  background: #12213899;
+  background: hsla(24, 26%, 15%, 0.5);
   z-index: 4000;
   display: flex;
   justify-content: center;
@@ -445,8 +491,9 @@ strong {
 }
 .follow-form {
   box-sizing: border-box;
-  background: white;
-  border-radius: 0.8rem;
+  background: var(--surface-raised);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: 1.3rem;
   width: min(42rem, 100%);
   max-height: 94dvh;
@@ -463,10 +510,19 @@ select {
   box-sizing: border-box;
   width: 100%;
   padding: 0.65em;
-  border: 1px solid #b8c4d3;
-  border-radius: 0.4em;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-sketch-sm);
+  background: var(--surface-raised);
+  color: inherit;
   font: inherit;
   margin-top: 0.35em;
+  accent-color: var(--primary-500);
+}
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: var(--focus-ring);
 }
 .two {
   display: grid;
@@ -482,9 +538,9 @@ select {
   width: auto;
 }
 .folder-picker {
-  border: 1px solid #dce3eb;
+  border: 1.5px dashed var(--line-soft);
   padding: 0.7rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sketch-sm);
 }
 .crumbs,
 .folder-list {
@@ -498,7 +554,7 @@ select {
   margin: 0.5rem 0;
 }
 .entry {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px dashed var(--border-strong);
   padding: 0.7rem 0;
   overflow-wrap: anywhere;
 }
@@ -523,6 +579,9 @@ select {
   }
   h2 {
     font-size: 20px;
+  }
+  .title-deco {
+    height: 48px;
   }
   h3 {
     font-size: 18px;

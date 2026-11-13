@@ -81,7 +81,7 @@
     <section v-for="group in store.resources" :key="group.id" class="resource-group">
       <header class="group-header" @click="group.displayList = !group.displayList">
         <span class="group-avatar" :class="{ 'group-avatar--115': group.id === SUMMARY_115_ID }">
-          <template v-if="group.id === SUMMARY_115_ID">115</template>
+          <img v-if="group.id === SUMMARY_115_ID" :src="iconCloudBox" alt="" />
           <img
             v-else-if="group.channelInfo.channelLogo"
             :src="getProxyImageUrl(group.channelInfo.channelLogo)"
@@ -228,6 +228,7 @@ import type { ResourceItem } from "@/types";
 import { ArrowDown } from "@element-plus/icons-vue";
 import { getProxyImageUrl } from "@/utils/image";
 import { copyMagnet } from "@/utils/magnet";
+import iconCloudBox from "@/assets/moe/icon-cloud-box.webp";
 import {
   LINK_STATUS_LABEL,
   LINK_STATUS_TONE,
@@ -322,8 +323,9 @@ const handleLoadMore = (channelId: string) => {
     height: 24px;
     border-radius: var(--radius-full);
     overflow: hidden;
-    background: var(--primary-100);
-    color: var(--primary-700);
+    background: var(--pink-100);
+    color: var(--text-primary);
+    box-shadow: inset 0 0 0 1px var(--line-soft);
     font-size: var(--text-xs);
     font-weight: var(--weight-bold);
     flex: none;
@@ -335,9 +337,15 @@ const handleLoadMore = (channelId: string) => {
     }
 
     &--115 {
-      background: var(--primary-500);
-      color: #fff;
-      font-size: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+
+      img {
+        object-fit: contain;
+      }
     }
   }
 
@@ -350,7 +358,7 @@ const handleLoadMore = (channelId: string) => {
   .group-count {
     padding: 0 var(--space-2);
     border-radius: var(--radius-full);
-    background: var(--grey-200);
+    background: var(--pink-100);
     color: var(--text-secondary);
     font-size: var(--text-xs);
     line-height: 20px;
@@ -392,15 +400,15 @@ const handleLoadMore = (channelId: string) => {
   min-width: 0;
   padding: var(--space-4);
   background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border: var(--line-width) solid var(--line-soft);
+  border-radius: var(--radius-sketch);
   box-shadow: var(--shadow-1);
   transition:
     box-shadow var(--duration) var(--ease),
     border-color var(--duration) var(--ease);
 
   &:hover {
-    border-color: var(--border-strong);
+    border-color: var(--line);
     box-shadow: var(--shadow-2);
   }
 
@@ -413,7 +421,7 @@ const handleLoadMore = (channelId: string) => {
   flex: none;
   width: 96px;
   height: 136px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sketch-sm);
   overflow: hidden;
   background: var(--grey-100);
   cursor: pointer;
@@ -440,12 +448,12 @@ const handleLoadMore = (channelId: string) => {
   &[data-type="magnet"],
   &[data-type="ed2k"] {
     color: var(--amber-500);
-    background: linear-gradient(160deg, hsl(43, 100%, 96%), var(--amber-100));
+    background: linear-gradient(160deg, var(--grey-50), var(--amber-100));
   }
 
   &[data-type="quark"] {
     color: var(--violet-500);
-    background: linear-gradient(160deg, hsl(262, 90%, 98%), var(--violet-100));
+    background: linear-gradient(160deg, var(--grey-50), var(--violet-100));
   }
 }
 
@@ -586,6 +594,11 @@ const handleLoadMore = (channelId: string) => {
     margin: 0;
   }
 
+  .el-button--small {
+    height: 28px;
+    padding: 0 var(--space-3);
+  }
+
   &--dialog {
     justify-content: flex-end;
   }
@@ -606,7 +619,7 @@ const handleLoadMore = (channelId: string) => {
     flex: none;
     width: 150px;
     height: 216px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-sketch-sm);
     overflow: hidden;
     background: var(--grey-100);
 

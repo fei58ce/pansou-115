@@ -174,7 +174,8 @@ const toggleExpand = (id: string) => {
   margin-bottom: 10px;
   padding: 12px;
   background: var(--surface-raised);
-  border-radius: 12px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-sketch);
   box-shadow: var(--shadow-1);
 
   &.is-bad {
@@ -190,7 +191,7 @@ const toggleExpand = (id: string) => {
     flex: none;
     width: 72px;
     height: 100px;
-    border-radius: 8px;
+    border-radius: var(--radius-sketch-sm);
     overflow: hidden;
     background: var(--grey-100);
 
@@ -274,24 +275,24 @@ const toggleExpand = (id: string) => {
     gap: 6px;
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid var(--border);
+    border-top: 1px dashed var(--border-strong);
 
     .actions__spacer {
       flex: 1;
     }
 
     .van-button {
-      height: 28px;
+      height: 30px;
       margin: 0;
-      padding: 0 10px;
-      border-radius: 6px;
+      padding: 0 12px;
+      border-radius: var(--radius-sketch-pill);
       font-size: 12px;
       font-weight: 500;
     }
 
     .van-button--plain {
-      color: var(--text-secondary);
-      border-color: var(--border-strong);
+      color: var(--text-primary);
+      border-color: var(--line);
     }
   }
 }
@@ -310,12 +311,12 @@ const toggleExpand = (id: string) => {
   &[data-type="magnet"],
   &[data-type="ed2k"] {
     color: var(--amber-500);
-    background: linear-gradient(160deg, hsl(43, 100%, 96%), var(--amber-100));
+    background: linear-gradient(160deg, var(--grey-50), var(--amber-100));
   }
 
   &[data-type="quark"] {
     color: var(--violet-500);
-    background: linear-gradient(160deg, hsl(262, 90%, 98%), var(--violet-100));
+    background: linear-gradient(160deg, var(--grey-50), var(--violet-100));
   }
 }
 

@@ -47,7 +47,7 @@
             <el-button type="primary" size="small" @click="initQrcode">重新获取</el-button>
           </div>
           <div v-else-if="status === 'confirmed'" class="qrcode-mask success">
-            <el-icon size="36" color="#67c23a"><CircleCheckFilled /></el-icon>
+            <el-icon size="36" color="var(--green-500)"><CircleCheckFilled /></el-icon>
             <p>登录成功</p>
           </div>
         </div>
@@ -306,7 +306,7 @@ onUnmounted(() => {
   float: right;
   margin-left: 12px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-tertiary);
 }
 
 .qrcode-app-hint {
@@ -314,7 +314,7 @@ onUnmounted(() => {
   margin: 6px 0 14px;
   font-size: 12px;
   line-height: 1.5;
-  color: #909399;
+  color: var(--text-tertiary);
   text-align: center;
 }
 
@@ -331,11 +331,12 @@ onUnmounted(() => {
   position: relative;
   width: 220px;
   height: 220px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border: var(--line-width) solid var(--line-soft);
+  border-radius: var(--radius-sketch-sm);
   overflow: hidden;
+  // 二维码需要纯白底才好识别
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-1);
 }
 
 .qrcode-img {
@@ -347,17 +348,17 @@ onUnmounted(() => {
 .qrcode-mask {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.95);
+  background: hsla(40, 60%, 99%, 0.95);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #f56c6c;
+  color: var(--red-700);
   font-size: 14px;
 
   &.success {
-    color: #67c23a;
+    color: var(--green-700);
   }
 }
 
@@ -372,10 +373,10 @@ onUnmounted(() => {
     color: var(--theme-primary);
   }
   .status-success {
-    color: #67c23a;
+    color: var(--green-700);
   }
   .status-error {
-    color: #f56c6c;
+    color: var(--red-700);
   }
   .app-label {
     color: var(--theme-primary);

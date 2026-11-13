@@ -4,7 +4,7 @@
     <el-card v-if="settingStore.globalSetting" class="settings-card network-card">
       <template #header>
         <div class="card-header">
-          <el-icon><Connection /></el-icon>
+          <img :src="iconGear" alt="" class="card-header__icon" />
           <h2>项目配置</h2>
         </div>
       </template>
@@ -13,7 +13,7 @@
         <!-- 代理配置组 -->
         <div class="settings-group">
           <div class="group-header">
-            <h3>代理设置</h3>
+            <h3><img :src="iconGlobe" alt="" class="group-icon" />代理设置</h3>
             <el-switch
               v-model="localGlobalSetting.isProxyEnabled"
               active-text="已启用"
@@ -55,7 +55,7 @@
 
         <!-- 注册码配置组 -->
         <div class="settings-group">
-          <h3>注册码设置</h3>
+          <h3><img :src="iconKey" alt="" class="group-icon" />注册码设置</h3>
           <div class="form-row">
             <div class="form-item">
               <label for="AdminUserCode">管理员注册码</label>
@@ -89,7 +89,7 @@
           </div>
           <!-- OneStrm 配置组 -->
           <div class="settings-group">
-            <h3>OneStrm 联动</h3>
+            <h3><img :src="iconLink" alt="" class="group-icon" />OneStrm 联动</h3>
             <div class="form-row">
               <div class="form-item full-width">
                 <label for="oneStrmBaseUrl">OneStrm 地址</label>
@@ -150,7 +150,7 @@
 
           <!-- TMDB 配置组 -->
           <div class="settings-group">
-            <h3>TMDB 榜单设置</h3>
+            <h3><img :src="iconStar" alt="" class="group-icon" />TMDB 榜单设置</h3>
             <div class="form-row">
               <div class="form-item full-width">
                 <label for="tmdbApiKey">TMDB API Key</label>
@@ -176,14 +176,14 @@
     <el-card class="settings-card user-card">
       <template #header>
         <div class="card-header">
-          <el-icon><User /></el-icon>
+          <img :src="iconUser" alt="" class="card-header__icon" />
           <h2>用户配置</h2>
         </div>
       </template>
 
       <div class="settings-section">
         <div class="settings-group">
-          <h3>网盘授权</h3>
+          <h3><img :src="iconCloudBox" alt="" class="group-icon" />网盘授权</h3>
 
           <!-- 115 网盘 -->
           <div class="form-row">
@@ -245,16 +245,14 @@ import { useUserSettingStore } from "@/stores/userSetting";
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import type { GlobalSettingAttributes, UserSettingAttributes } from "@/types/user";
-import {
-  Connection,
-  Film,
-  Monitor,
-  Position,
-  Key,
-  User,
-  Lock,
-  FullScreen,
-} from "@element-plus/icons-vue";
+import { Film, Monitor, Position, Key, Lock, FullScreen } from "@element-plus/icons-vue";
+import iconGear from "@/assets/moe/icon-gear.webp";
+import iconGlobe from "@/assets/moe/icon-globe.webp";
+import iconKey from "@/assets/moe/icon-key.webp";
+import iconLink from "@/assets/moe/icon-link.webp";
+import iconStar from "@/assets/moe/icon-star.webp";
+import iconUser from "@/assets/moe/icon-user.webp";
+import iconCloudBox from "@/assets/moe/icon-cloud-box.webp";
 import Cloud115QrcodeLogin from "@/components/Cloud115QrcodeLogin.vue";
 import { cloud115QrcodeApi } from "@/api/cloud115Qrcode";
 
@@ -378,9 +376,9 @@ const onQrcodeSuccess = async () => {
 
 .settings-card {
   margin-bottom: 24px;
-  border-radius: var(--theme-radius);
+  border-radius: var(--radius-sketch);
   transition: var(--theme-transition);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: var(--line-width) solid var(--line-soft);
 
   &:hover {
     box-shadow: var(--theme-shadow);
@@ -388,7 +386,7 @@ const onQrcodeSuccess = async () => {
 
   :deep(.el-card__header) {
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px dashed var(--border-strong);
   }
 }
 
@@ -396,14 +394,14 @@ const onQrcodeSuccess = async () => {
   @include flex-center;
   gap: 12px;
 
-  .el-icon {
-    font-size: 20px;
-    color: var(--theme-primary);
+  .card-header__icon {
+    width: 26px;
+    height: 26px;
   }
 
   h2 {
     margin: 0;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--theme-text-primary);
   }
@@ -421,10 +419,18 @@ const onQrcodeSuccess = async () => {
   }
 
   h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0 0 16px;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
-    color: var(--theme-text-regular);
+    color: var(--theme-text-primary);
+  }
+
+  .group-icon {
+    width: 22px;
+    height: 22px;
   }
 
   .group-header {
@@ -468,17 +474,17 @@ const onQrcodeSuccess = async () => {
     width: 100%;
 
     .el-input__wrapper {
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 0 var(--line-width) var(--line-soft) inset;
       transition: var(--theme-transition);
 
       &:hover {
-        box-shadow: 0 0 0 1px var(--theme-primary);
+        box-shadow: 0 0 0 var(--line-width) var(--line) inset;
       }
 
       &.is-focus {
         box-shadow:
-          0 0 0 1px var(--theme-primary),
-          0 0 0 3px rgba(0, 102, 204, 0.1);
+          0 0 0 var(--line-width) var(--primary-500) inset,
+          var(--focus-ring);
       }
     }
 
@@ -494,7 +500,7 @@ const onQrcodeSuccess = async () => {
 .settings-help {
   padding-top: 24px;
   margin-top: 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px dashed var(--border-strong);
 
   .help-links {
     display: flex;
@@ -528,7 +534,7 @@ const onQrcodeSuccess = async () => {
   .el-button {
     min-width: 120px;
     height: 40px;
-    border-radius: 20px;
+    border-radius: var(--radius-sketch-pill);
     font-size: 14px;
     transition: var(--theme-transition);
 

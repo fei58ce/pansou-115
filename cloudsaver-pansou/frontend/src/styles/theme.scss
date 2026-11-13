@@ -1,0 +1,122 @@
+// 「温柔线描」组件皮肤：把 Element Plus / Vant 的按钮、输入框、标签、弹窗统一成暖棕细线 + 手绘圆角。
+// 颜色和圆角都取 tokens.scss 的变量。组件库样式按需插入、晚于这里加载，所以选择器前面都带 :root 提高一级优先级；
+// 页面里自己写的样式需要覆盖时，同样加 :root 或写得更具体。
+
+::selection {
+  background: var(--pink-100);
+  color: var(--text-primary);
+}
+
+// ---------- Element Plus ----------
+
+:root .el-button {
+  border-width: var(--line-width);
+  border-radius: var(--radius-sketch-pill);
+  font-weight: var(--weight-medium);
+}
+
+// 默认按钮：白底暖棕线，悬停泛一点粉
+:root
+  .el-button:not(
+    .el-button--primary,
+    .el-button--success,
+    .el-button--warning,
+    .el-button--danger,
+    .el-button--info,
+    .is-text,
+    .is-link
+  ) {
+  --el-button-text-color: var(--text-primary);
+  --el-button-bg-color: var(--surface-raised);
+  --el-button-border-color: var(--line);
+  --el-button-hover-text-color: var(--text-primary);
+  --el-button-hover-bg-color: var(--pink-50);
+  --el-button-hover-border-color: var(--line);
+  --el-button-active-text-color: var(--text-primary);
+  --el-button-active-bg-color: var(--pink-100);
+  --el-button-active-border-color: var(--line);
+  --el-button-disabled-border-color: var(--border-strong);
+}
+
+// 实色按钮（转存、确认……）也描一圈暖棕线
+:root
+  :is(.el-button--primary, .el-button--success, .el-button--warning, .el-button--danger):not(
+    .is-plain,
+    .is-text,
+    .is-link
+  ) {
+  --el-button-border-color: var(--line);
+  --el-button-hover-border-color: var(--line);
+  --el-button-active-border-color: var(--line);
+  --el-button-disabled-border-color: var(--line-soft);
+}
+
+:root .el-button.is-text {
+  border-radius: var(--radius-sm);
+}
+
+:root :is(.el-input, .el-textarea) {
+  --el-input-border-color: var(--line-soft);
+  --el-input-hover-border-color: var(--line);
+  --el-input-focus-border-color: var(--primary-500);
+  --el-input-bg-color: var(--surface-raised);
+  --el-input-border-radius: var(--radius-sketch-sm);
+}
+
+:root .el-select {
+  --el-select-border-color-hover: var(--line);
+  --el-select-input-focus-border-color: var(--primary-500);
+}
+
+:root .el-tag {
+  --el-tag-border-radius: var(--radius-full);
+  --el-tag-border-radius-rounded: var(--radius-full);
+}
+
+:root .el-radio-button {
+  --el-radio-button-checked-bg-color: var(--pink-100);
+  --el-radio-button-checked-text-color: var(--text-primary);
+  --el-radio-button-checked-border-color: var(--line-soft);
+}
+
+:root :is(.el-dialog, .el-message-box) {
+  --el-dialog-border-radius: var(--radius-lg);
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+:root .el-popper.is-light {
+  border-color: var(--line-soft);
+}
+
+// ---------- Vant（手机端） ----------
+
+:root .van-button {
+  border-width: var(--line-width);
+  font-weight: var(--weight-medium);
+}
+
+:root .van-button--default {
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border-color: var(--line);
+}
+
+:root
+  :is(.van-button--primary, .van-button--success, .van-button--warning, .van-button--danger):not(
+    .van-button--plain
+  ) {
+  border-color: var(--line);
+}
+
+:root .van-button--round {
+  border-radius: var(--radius-sketch-pill);
+}
+
+:root .van-tag--round {
+  border-radius: var(--radius-full);
+}
+
+:root :is(.van-dialog, .van-popup--center) {
+  border: var(--line-width) solid var(--line);
+}

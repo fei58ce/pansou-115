@@ -2,7 +2,9 @@
   <div class="douban-page">
     <div class="douban-page__header">
       <div>
-        <h2 class="header__title">{{ currentCategory.label }}</h2>
+        <h2 class="header__title">
+          {{ currentCategory.label }}<img :src="decoPopcorn" alt="" class="title-deco" />
+        </h2>
         <p class="header__desc">点海报直接搜索资源，点片名打开豆瓣页面</p>
       </div>
       <div class="segmented" role="group" aria-label="榜单">
@@ -38,7 +40,7 @@
           </span>
           <div class="movie-poster-hover">
             <span class="hover__btn">
-              <el-icon><Search /></el-icon>
+              <img :src="iconSearch" alt="" class="hover__icon" />
               搜索资源
             </span>
           </div>
@@ -55,15 +57,22 @@
       </div>
     </div>
 
-    <el-empty v-else description="豆瓣榜单暂时没取到，稍后刷新试试" />
+    <el-empty
+      v-else
+      :image="sceneEmpty"
+      :image-size="300"
+      description="豆瓣榜单暂时没取到，稍后刷新试试"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Search } from "@element-plus/icons-vue";
 import { useDoubanStore } from "@/stores/douban";
+import decoPopcorn from "@/assets/moe/deco-popcorn.webp";
+import iconSearch from "@/assets/moe/icon-search.webp";
+import sceneEmpty from "@/assets/moe/scene-empty.webp";
 import { getProxyImageUrl } from "@/utils/image";
 import { DOUBAN_CATEGORIES, findDoubanCategory, type DoubanCategory } from "@/constants/douban";
 
@@ -120,6 +129,12 @@ const searchMovie = (title: string) => {
       font-weight: var(--weight-bold);
       color: var(--text-primary);
       line-height: var(--leading-tight);
+
+      .title-deco {
+        height: 28px;
+        margin-left: var(--space-1);
+        vertical-align: -5px;
+      }
     }
 
     .header__desc {
@@ -132,15 +147,16 @@ const searchMovie = (title: string) => {
 
 .segmented {
   display: inline-flex;
-  padding: 2px;
-  border-radius: var(--radius);
-  background: var(--grey-200);
+  padding: 3px;
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-sketch-pill);
+  background: var(--surface-raised);
 
   button {
     height: 30px;
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-4);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sketch-pill);
     background: transparent;
     color: var(--text-secondary);
     font-family: inherit;
@@ -149,10 +165,9 @@ const searchMovie = (title: string) => {
     transition: var(--theme-transition);
 
     &.is-active {
-      background: var(--surface-raised);
+      background: var(--pink-100);
       color: var(--text-primary);
-      font-weight: var(--weight-medium);
-      box-shadow: var(--shadow-1);
+      font-weight: var(--weight-bold);
     }
 
     &:focus-visible {
@@ -182,7 +197,8 @@ const searchMovie = (title: string) => {
   position: relative;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: var(--radius);
+  border: var(--line-width) solid var(--line-soft);
+  border-radius: var(--radius-sketch-sm);
   background: var(--grey-200);
   box-shadow: var(--shadow-1);
   cursor: pointer;
@@ -213,20 +229,23 @@ const searchMovie = (title: string) => {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  padding: 0 6px;
-  border-radius: var(--radius-sm);
+  padding: 0 7px;
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-full);
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
-  line-height: 20px;
-  color: #fff;
-  background: var(--grey-600);
+  line-height: 18px;
+  color: var(--text-primary);
+  background: var(--grey-100);
 
   &.is-high {
-    background: var(--green-500);
+    color: var(--primary-800);
+    background: var(--primary-100);
   }
 
   &.is-mid {
-    background: var(--amber-500);
+    color: var(--pink-700);
+    background: var(--pink-100);
   }
 }
 
@@ -237,7 +256,7 @@ const searchMovie = (title: string) => {
   align-items: flex-end;
   justify-content: center;
   padding-bottom: var(--space-4);
-  background: linear-gradient(to top, hsla(220, 38%, 13%, 0.75), transparent 60%);
+  background: linear-gradient(to top, hsla(24, 30%, 15%, 0.7), transparent 60%);
   opacity: 0;
   transition: opacity var(--duration) var(--ease);
 
@@ -246,11 +265,17 @@ const searchMovie = (title: string) => {
     align-items: center;
     gap: var(--space-1);
     padding: 6px var(--space-3);
-    border-radius: var(--radius-full);
+    border: var(--line-width) solid var(--line);
+    border-radius: var(--radius-sketch-pill);
     background: var(--surface-raised);
     color: var(--text-primary);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
+  }
+
+  .hover__icon {
+    width: 16px;
+    height: 16px;
   }
 }
 

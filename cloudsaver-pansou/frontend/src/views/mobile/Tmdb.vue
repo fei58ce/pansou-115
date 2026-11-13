@@ -108,15 +108,16 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
 
   &__item {
     background: var(--theme-other_background);
-    border-radius: var(--border-radius-lg);
+    border: 1.5px solid var(--line-soft);
+    border-radius: var(--radius-sketch);
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-1);
   }
 
   &__poster {
     position: relative;
     aspect-ratio: 2/3;
-    background: #f5f5f5;
+    background: var(--grey-100);
 
     .poster__rate,
     .poster__type {
@@ -153,7 +154,7 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
     .info__action {
       margin-top: 4px;
       font-size: 11px;
-      color: var(--theme-theme, #1989fa);
+      color: var(--theme-theme);
     }
   }
 

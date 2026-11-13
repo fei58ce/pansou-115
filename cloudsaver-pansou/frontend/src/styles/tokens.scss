@@ -1,5 +1,6 @@
 // 设计规范：组件里只用这里的变量（间距/字号/颜色/阴影/圆角），不要再写裸色值和随手的尺寸。
 // 移动端根字号被设成 屏宽/7.5，这里的尺寸一律用 px，不要换成 rem。
+// 配色是「温柔线描」：暖白底、暖棕细线，鼠尾草绿是主色，灰粉只用于选中和需要留意的提醒。
 :root {
   --space-1: 4px;
   --space-2: 8px;
@@ -30,64 +31,83 @@
     "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji";
 
-  --grey-50: hsl(216, 33%, 98%);
-  --grey-100: hsl(216, 30%, 96%);
-  --grey-200: hsl(215, 26%, 91%);
-  --grey-300: hsl(214, 22%, 83%);
-  --grey-400: hsl(214, 16%, 66%);
-  --grey-500: hsl(215, 14%, 51%);
-  --grey-600: hsl(216, 18%, 40%);
-  --grey-700: hsl(217, 24%, 30%);
-  --grey-800: hsl(218, 30%, 21%);
-  --grey-900: hsl(220, 38%, 13%);
+  // 暖灰：背景、分割线和文字都从这里取
+  --grey-50: hsl(40, 45%, 98%);
+  --grey-100: hsl(37, 36%, 95%);
+  --grey-200: hsl(34, 26%, 90%);
+  --grey-300: hsl(31, 19%, 82%);
+  --grey-400: hsl(29, 13%, 66%);
+  --grey-500: hsl(27, 11%, 51%);
+  --grey-600: hsl(26, 13%, 40%);
+  --grey-700: hsl(25, 17%, 30%);
+  --grey-800: hsl(24, 21%, 22%);
+  --grey-900: hsl(23, 26%, 15%);
 
-  --primary-50: hsl(222, 100%, 97%);
-  --primary-100: hsl(222, 100%, 94%);
-  --primary-200: hsl(222, 96%, 87%);
-  --primary-300: hsl(222, 92%, 77%);
-  --primary-400: hsl(222, 86%, 64%);
-  --primary-500: hsl(222, 80%, 52%);
-  --primary-600: hsl(223, 78%, 45%);
-  --primary-700: hsl(224, 76%, 38%);
-  --primary-800: hsl(226, 72%, 30%);
-  --primary-900: hsl(228, 70%, 22%);
+  // 主色：鼠尾草绿。500 上放白字，字重用 medium 以上
+  --primary-50: hsl(95, 33%, 96%);
+  --primary-100: hsl(95, 31%, 91%);
+  --primary-200: hsl(96, 27%, 82%);
+  --primary-300: hsl(97, 24%, 70%);
+  --primary-400: hsl(97, 22%, 58%);
+  --primary-500: hsl(97, 23%, 46%);
+  --primary-600: hsl(99, 25%, 38%);
+  --primary-700: hsl(101, 27%, 30%);
+  --primary-800: hsl(103, 29%, 23%);
+  --primary-900: hsl(105, 31%, 16%);
+
+  // 灰粉：菜单和分段切换的选中态、「需提取码」这类提醒
+  --pink-50: hsl(14, 70%, 97%);
+  --pink-100: hsl(13, 62%, 93%);
+  --pink-200: hsl(12, 52%, 86%);
+  --pink-500: hsl(10, 42%, 60%);
+  --pink-700: hsl(8, 38%, 40%);
 
   // 强调色只给三档：浅底 / 实色 / 浅底上的文字
-  --green-100: hsl(145, 64%, 93%);
-  --green-500: hsl(152, 62%, 34%);
-  --green-700: hsl(154, 70%, 22%);
-  --amber-100: hsl(43, 100%, 91%);
-  --amber-500: hsl(36, 90%, 46%);
-  --amber-700: hsl(28, 85%, 28%);
-  --red-100: hsl(0, 90%, 95%);
-  --red-500: hsl(0, 70%, 52%);
-  --red-700: hsl(0, 70%, 35%);
-  --violet-100: hsl(262, 90%, 95%);
-  --violet-500: hsl(262, 58%, 54%);
-  --violet-700: hsl(263, 52%, 36%);
+  --green-100: hsl(95, 34%, 90%);
+  --green-500: hsl(100, 27%, 40%);
+  --green-700: hsl(102, 32%, 27%);
+  --amber-100: hsl(40, 72%, 91%);
+  --amber-500: hsl(33, 62%, 48%);
+  --amber-700: hsl(27, 58%, 31%);
+  --red-100: hsl(8, 72%, 94%);
+  --red-500: hsl(6, 58%, 52%);
+  --red-700: hsl(4, 56%, 37%);
+  --violet-100: hsl(285, 28%, 94%);
+  --violet-500: hsl(284, 22%, 50%);
+  --violet-700: hsl(284, 25%, 34%);
 
-  --shadow-1: 0 1px 2px hsla(220, 38%, 13%, 0.06), 0 1px 3px hsla(220, 38%, 13%, 0.06);
-  --shadow-2: 0 4px 10px -2px hsla(220, 38%, 13%, 0.08), 0 2px 4px -2px hsla(220, 38%, 13%, 0.06);
-  --shadow-3: 0 14px 28px -8px hsla(220, 38%, 13%, 0.16), 0 4px 10px -4px hsla(220, 38%, 13%, 0.08);
-  --shadow-4: 0 24px 48px -12px hsla(220, 38%, 13%, 0.24);
+  // 线描风格靠线条分层，阴影只留很淡的一点，给弹层和悬浮按钮用
+  --shadow-1: 0 1px 2px hsla(25, 30%, 20%, 0.05);
+  --shadow-2: 0 3px 8px -2px hsla(25, 30%, 20%, 0.08);
+  --shadow-3: 0 12px 26px -10px hsla(25, 30%, 20%, 0.16);
+  --shadow-4: 0 22px 44px -14px hsla(25, 30%, 20%, 0.22);
 
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
+  // 手绘感线框：四个角的半径略有出入，配合 --line 细线使用；pill 用在按钮、标签、搜索框这类胶囊形状上
+  --radius-sketch: 16px 20px 15px 22px / 20px 15px 22px 16px;
+  --radius-sketch-sm: 10px 13px 9px 14px / 13px 9px 14px 10px;
+  // 半径都远大于元素高度，浏览器会按同一比例缩小，所以任何高度都是胶囊，只留一点不对称的手绘感
+  --radius-sketch-pill: 999px 760px 999px 840px / 840px 999px 760px 999px;
 
-  --surface: var(--grey-100);
-  --surface-raised: #fff;
+  --surface: hsl(38, 50%, 97%);
+  --surface-raised: hsl(40, 60%, 99%);
   --surface-sunken: var(--grey-200);
   --border: var(--grey-200);
   --border-strong: var(--grey-300);
+  // 手绘线：按钮、搜索框用 --line，卡片这类大面积的框用 --line-soft
+  --line: hsl(24, 24%, 28%);
+  --line-soft: hsl(26, 16%, 58%);
+  --line-width: 1.5px;
   --text-primary: var(--grey-900);
   --text-secondary: var(--grey-700);
   --text-tertiary: var(--grey-600);
   --text-disabled: var(--grey-400);
   --action: var(--primary-500);
   --action-hover: var(--primary-600);
-  --focus-ring: 0 0 0 3px hsla(222, 80%, 52%, 0.25);
+  --focus-ring: 0 0 0 3px hsla(97, 30%, 46%, 0.3);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --duration: 160ms;
 
@@ -127,24 +147,24 @@
   --el-color-primary-light-9: var(--primary-50);
   --el-color-primary-dark-2: var(--primary-600);
   --el-color-success: var(--green-500);
-  --el-color-success-light-3: hsl(152, 42%, 52%);
-  --el-color-success-light-5: hsl(150, 44%, 66%);
-  --el-color-success-light-7: hsl(148, 50%, 80%);
-  --el-color-success-light-8: hsl(146, 56%, 87%);
+  --el-color-success-light-3: hsl(99, 22%, 54%);
+  --el-color-success-light-5: hsl(97, 24%, 66%);
+  --el-color-success-light-7: hsl(96, 28%, 79%);
+  --el-color-success-light-8: hsl(95, 30%, 86%);
   --el-color-success-light-9: var(--green-100);
   --el-color-success-dark-2: var(--green-700);
   --el-color-warning: var(--amber-500);
-  --el-color-warning-light-3: hsl(38, 90%, 60%);
-  --el-color-warning-light-5: hsl(40, 92%, 70%);
-  --el-color-warning-light-7: hsl(42, 96%, 82%);
-  --el-color-warning-light-8: hsl(42, 100%, 87%);
+  --el-color-warning-light-3: hsl(35, 62%, 62%);
+  --el-color-warning-light-5: hsl(37, 66%, 72%);
+  --el-color-warning-light-7: hsl(39, 70%, 83%);
+  --el-color-warning-light-8: hsl(40, 72%, 87%);
   --el-color-warning-light-9: var(--amber-100);
-  --el-color-warning-dark-2: hsl(32, 88%, 38%);
+  --el-color-warning-dark-2: hsl(30, 60%, 40%);
   --el-color-danger: var(--red-500);
-  --el-color-danger-light-3: hsl(0, 72%, 66%);
-  --el-color-danger-light-5: hsl(0, 76%, 76%);
-  --el-color-danger-light-7: hsl(0, 80%, 86%);
-  --el-color-danger-light-8: hsl(0, 84%, 90%);
+  --el-color-danger-light-3: hsl(7, 60%, 65%);
+  --el-color-danger-light-5: hsl(8, 64%, 75%);
+  --el-color-danger-light-7: hsl(8, 68%, 85%);
+  --el-color-danger-light-8: hsl(8, 70%, 89%);
   --el-color-danger-light-9: var(--red-100);
   --el-color-danger-dark-2: var(--red-700);
   --el-color-error: var(--red-500);
@@ -166,10 +186,12 @@
   --el-fill-color: var(--grey-100);
   --el-fill-color-light: var(--grey-50);
   --el-fill-color-lighter: var(--grey-50);
-  --el-fill-color-blank: #fff;
+  --el-fill-color-blank: var(--surface-raised);
+  --el-bg-color: var(--surface-raised);
+  --el-bg-color-overlay: var(--surface-raised);
   --el-bg-color-page: var(--surface);
   --el-border-radius-small: var(--radius-sm);
-  --el-border-radius-base: 8px;
+  --el-border-radius-base: 10px;
   --el-box-shadow-light: var(--shadow-2);
   --el-box-shadow: var(--shadow-3);
   --el-box-shadow-dark: var(--shadow-4);
@@ -185,13 +207,14 @@
   --van-background: var(--surface);
   --van-background-2: var(--surface-raised);
   --van-active-color: var(--grey-200);
-  --van-radius-md: 8px;
-  --van-radius-lg: 12px;
+  --van-radius-md: 10px;
+  --van-radius-lg: 14px;
   --van-base-font: var(--font-sans);
   --van-tabs-bottom-bar-color: var(--primary-500);
   --van-tab-text-color: var(--text-tertiary);
   --van-tab-active-text-color: var(--text-primary);
-  --van-tabbar-item-active-color: var(--primary-500);
+  --van-tabbar-item-active-color: var(--text-primary);
+  --van-tabbar-item-text-color: var(--text-secondary);
   --van-search-content-background: var(--grey-100);
 }
 

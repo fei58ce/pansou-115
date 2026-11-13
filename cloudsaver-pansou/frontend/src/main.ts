@@ -12,6 +12,7 @@ import "element-plus/es/components/message-box/style/css";
 import "@/styles/responsive.scss";
 import "@/styles/common.scss";
 import "@/styles/tokens.scss";
+import "@/styles/theme.scss";
 
 import router from "./router/index";
 

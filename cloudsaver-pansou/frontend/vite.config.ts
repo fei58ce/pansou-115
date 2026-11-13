@@ -16,14 +16,14 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: "auto",
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,svg}"],
+        globPatterns: ["**/*.{js,css,html,png,svg,webp}"],
       },
       manifest: {
         name: "自用影视搜索库",
         short_name: "影视搜索",
         description: "网盘资源搜索工具",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        theme_color: "#fbf8f4",
+        background_color: "#fbf8f4",
         display: "standalone",
         scope: "/",
         start_url: "/",

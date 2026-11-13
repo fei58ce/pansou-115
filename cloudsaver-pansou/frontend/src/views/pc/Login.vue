@@ -1,8 +1,10 @@
 <template>
   <div class="login-page">
+    <img :src="sceneLoginLeft" alt="" class="login-scene login-scene--left" />
+    <img :src="sceneLoginRight" alt="" class="login-scene login-scene--right" />
     <div class="login-card">
       <div class="card-header">
-        <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
+        <img :src="mascotLogo" alt="Logo" class="logo" />
         <h1 class="title">{{ PROJECT_NAME }}</h1>
         <p class="subtitle">登录后即可搜索资源、追更和转存</p>
       </div>
@@ -16,12 +18,9 @@
             @keyup.enter="handleLogin"
           >
             <el-form-item prop="username">
-              <el-input
-                v-model="loginForm.username"
-                placeholder="用户名"
-                :prefix-icon="User"
-                autocomplete="username"
-              />
+              <el-input v-model="loginForm.username" placeholder="用户名" autocomplete="username">
+                <template #prefix><img :src="iconUser" alt="" class="input-icon" /></template>
+              </el-input>
             </el-form-item>
 
             <el-form-item prop="password">
@@ -29,10 +28,11 @@
                 v-model="loginForm.password"
                 type="password"
                 placeholder="密码"
-                :prefix-icon="Lock"
                 show-password
                 autocomplete="current-password"
-              />
+              >
+                <template #prefix><img :src="iconLock" alt="" class="input-icon" /></template>
+              </el-input>
             </el-form-item>
 
             <div class="form-options">
@@ -48,7 +48,9 @@
         <el-tab-pane label="注册" name="register">
           <el-form ref="registerFormRef" :model="registerForm" :rules="registerRules">
             <el-form-item prop="username">
-              <el-input v-model="registerForm.username" placeholder="用户名" :prefix-icon="User" />
+              <el-input v-model="registerForm.username" placeholder="用户名">
+                <template #prefix><img :src="iconUser" alt="" class="input-icon" /></template>
+              </el-input>
             </el-form-item>
 
             <el-form-item prop="password">
@@ -56,9 +58,10 @@
                 v-model="registerForm.password"
                 type="password"
                 placeholder="密码"
-                :prefix-icon="Lock"
                 show-password
-              />
+              >
+                <template #prefix><img :src="iconLock" alt="" class="input-icon" /></template>
+              </el-input>
             </el-form-item>
 
             <el-form-item prop="confirmPassword">
@@ -66,17 +69,16 @@
                 v-model="registerForm.confirmPassword"
                 type="password"
                 placeholder="确认密码"
-                :prefix-icon="Lock"
                 show-password
-              />
+              >
+                <template #prefix><img :src="iconLock" alt="" class="input-icon" /></template>
+              </el-input>
             </el-form-item>
 
             <el-form-item prop="registerCode">
-              <el-input
-                v-model="registerForm.registerCode"
-                placeholder="注册码"
-                :prefix-icon="Key"
-              />
+              <el-input v-model="registerForm.registerCode" placeholder="注册码">
+                <template #prefix><img :src="iconKey" alt="" class="input-icon" /></template>
+              </el-input>
             </el-form-item>
 
             <el-button type="primary" class="submit-btn" :loading="loading" @click="handleRegister">
@@ -93,7 +95,12 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { User, Lock, Key } from "@element-plus/icons-vue";
+import mascotLogo from "@/assets/moe/mascot-logo.webp";
+import sceneLoginLeft from "@/assets/moe/scene-login-left.webp";
+import sceneLoginRight from "@/assets/moe/scene-login-right.webp";
+import iconUser from "@/assets/moe/icon-user.webp";
+import iconLock from "@/assets/moe/icon-lock.webp";
+import iconKey from "@/assets/moe/icon-key.webp";
 import { userApi } from "@/api/user";
 import { PROJECT_NAME } from "@/constants/project";
 import { STORAGE_KEYS } from "@/constants/storage";
@@ -232,6 +239,7 @@ const handleRegister = async () => {
 
 <style scoped lang="scss">
 .login-page {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,9 +248,34 @@ const handleRegister = async () => {
   padding: 32px 16px;
   overflow-y: auto;
   background:
-    radial-gradient(circle at 15% 20%, hsla(0, 0%, 100%, 0.18), transparent 40%),
-    radial-gradient(circle at 85% 10%, hsla(262, 90%, 80%, 0.3), transparent 45%),
-    linear-gradient(150deg, var(--primary-700), var(--primary-500) 55%, var(--primary-400));
+    radial-gradient(circle at 14% 22%, var(--pink-100), transparent 42%),
+    radial-gradient(circle at 86% 80%, var(--primary-100), transparent 42%), var(--surface);
+}
+
+.login-scene {
+  position: absolute;
+  top: 50%;
+  pointer-events: none;
+  user-select: none;
+
+  &--left {
+    left: 4%;
+    width: min(23vw, 360px);
+    transform: translateY(-42%);
+  }
+
+  &--right {
+    right: 5%;
+    width: min(20vw, 310px);
+    transform: translateY(-50%);
+  }
+}
+
+// 窄窗口里插画会压到登录卡片
+@media (max-width: 1000px) {
+  .login-scene {
+    display: none;
+  }
 }
 
 @media (max-height: 760px) {
@@ -252,13 +285,16 @@ const handleRegister = async () => {
 }
 
 .login-card {
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
   width: 420px;
   max-width: 100%;
   padding: 36px 36px 32px;
   background: var(--surface-raised);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-4);
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-sketch);
+  box-shadow: var(--shadow-3);
 }
 
 .card-header {
@@ -266,10 +302,10 @@ const handleRegister = async () => {
   text-align: center;
 
   .logo {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 12px;
-    border-radius: var(--radius);
+    width: 76px;
+    height: 76px;
+    margin-bottom: 8px;
+    object-fit: contain;
   }
 
   .title {
@@ -321,6 +357,11 @@ const handleRegister = async () => {
   font-size: var(--text-base);
 }
 
+.input-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .form-options {
   display: flex;
   align-items: center;
@@ -332,7 +373,7 @@ const handleRegister = async () => {
   width: 100%;
   height: 44px;
   font-size: var(--text-md);
-  font-weight: var(--weight-medium);
-  border-radius: var(--radius);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-sketch-pill);
 }
 </style>

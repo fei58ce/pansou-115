@@ -20,7 +20,7 @@
 
     <!-- 空状态 -->
     <div v-else-if="!resourceStore.resources.length" class="resource-list__empty">
-      <div class="empty__icon"><van-icon name="search" /></div>
+      <img :src="sceneEmpty" alt="" class="empty__art" />
       <h2 class="empty__title">
         {{ resourceStore.keyword ? `没有找到「${resourceStore.keyword}」` : "搜索影视资源" }}
       </h2>
@@ -54,21 +54,31 @@
       <!-- 结果概览 -->
       <div class="resource-list__summary">
         <template v-if="resourceStore.keyword">
-          <span class="summary__title">「{{ resourceStore.keyword }}」</span>
+          <span class="summary__title">
+            「{{ resourceStore.keyword }}」<img :src="decoPopcorn" alt="" class="title-deco" />
+          </span>
           <span class="summary__meta"> {{ stats.sources }} 个来源 · 共 {{ stats.total }} 条 </span>
           <span v-if="stats.count115" class="summary__meta summary__meta--115">
             115 有 {{ stats.count115 }} 条
           </span>
         </template>
         <template v-else>
-          <span class="summary__title">最新资源</span>
+          <span class="summary__title">
+            最新资源<img :src="decoPopcorn" alt="" class="title-deco" />
+          </span>
           <span v-if="resourceStore.lastUpdateTime" class="summary__meta">
             更新于 {{ resourceStore.lastUpdateTime }}
           </span>
           <span v-if="stats.count115" class="summary__meta summary__meta--115">
             115 有 {{ stats.count115 }} 条
           </span>
-          <van-icon name="replay" class="summary__refresh" @click="refreshResources" />
+          <img
+            :src="iconRefresh"
+            alt="刷新"
+            role="button"
+            class="summary__refresh"
+            @click="refreshResources"
+          />
         </template>
       </div>
 
@@ -108,7 +118,7 @@
     >
       <div class="save-popup__container">
         <div class="save-popup__header">
-          <van-tag color="#ff976a" round size="medium">magnet</van-tag>
+          <van-tag :color="getTagColor('magnet')" round size="medium">magnet</van-tag>
           <span class="header__title">115离线 · 选择目录</span>
         </div>
         <div class="save-popup__content">
@@ -273,6 +283,9 @@ import ResourceSelect from "@/components/mobile/ResourceSelect.vue";
 import ResourceCard from "@/components/mobile/ResourceCard.vue";
 import { add115Lixian } from "@/utils/magnet";
 import { resourceStats, withSummary115 } from "@/utils/resource";
+import decoPopcorn from "@/assets/moe/deco-popcorn.webp";
+import iconRefresh from "@/assets/moe/icon-refresh.webp";
+import sceneEmpty from "@/assets/moe/scene-empty.webp";
 
 // 状态管理
 const router = useRouter();
@@ -315,12 +328,12 @@ const saveDialogMap = {
 // 标签颜色映射
 const getTagColor = (type?: string) => {
   const colorMap: Record<string, string> = {
-    pan115: "#07c160",
-    quark: "#1989fa",
-    magnet: "#ff976a",
-    ed2k: "#7232dd",
+    pan115: "var(--primary-500)",
+    quark: "var(--violet-500)",
+    magnet: "var(--amber-500)",
+    ed2k: "var(--pink-500)",
   };
-  return colorMap[type || ""] || "#ff976a";
+  return colorMap[type || ""] || "var(--amber-500)";
 };
 
 // 监听器
@@ -497,16 +510,23 @@ onBeforeUnmount(() => {
   padding-bottom: 20px;
 
   &__summary {
+    position: relative;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 4px 8px;
-    padding: 12px 16px 4px;
+    gap: 4px 6px;
+    padding: 12px 40px 4px 16px;
 
     .summary__title {
       font-size: 17px;
       font-weight: 600;
       color: var(--text-primary);
+
+      .title-deco {
+        height: 20px;
+        margin-left: 4px;
+        vertical-align: -3px;
+      }
     }
 
     .summary__meta {
@@ -520,10 +540,13 @@ onBeforeUnmount(() => {
     }
 
     .summary__refresh {
-      margin-left: auto;
+      position: absolute;
+      top: 10px;
+      right: 8px;
+      box-sizing: content-box;
+      width: 22px;
+      height: 22px;
       padding: 4px;
-      font-size: 18px;
-      color: var(--primary-500);
     }
   }
 
@@ -590,7 +613,8 @@ onBeforeUnmount(() => {
       margin-bottom: 10px;
       padding: 12px;
       background: var(--surface-raised);
-      border-radius: 12px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-sketch);
     }
 
     .skeleton__body {
@@ -644,17 +668,11 @@ onBeforeUnmount(() => {
     padding: 56px 24px 24px;
     text-align: center;
 
-    .empty__icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 56px;
-      height: 56px;
-      margin-bottom: 14px;
-      border-radius: 50%;
-      background: var(--primary-100);
-      color: var(--primary-500);
-      font-size: 26px;
+    .empty__art {
+      width: 240px;
+      max-width: 80%;
+      margin-bottom: 12px;
+      pointer-events: none;
     }
 
     .empty__title {
@@ -677,7 +695,8 @@ onBeforeUnmount(() => {
       padding: 14px;
       text-align: left;
       background: var(--surface-raised);
-      border-radius: 12px;
+      border: 1.5px solid var(--line-soft);
+      border-radius: var(--radius-sketch);
       box-sizing: border-box;
     }
 
@@ -703,10 +722,11 @@ onBeforeUnmount(() => {
     }
 
     .chip {
-      padding: 5px 12px;
-      border-radius: 15px;
-      background: var(--grey-100);
-      color: var(--text-secondary);
+      padding: 4px 12px;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-sketch-pill);
+      background: var(--surface-raised);
+      color: var(--text-primary);
       font-size: 13px;
     }
 
@@ -863,6 +883,6 @@ onBeforeUnmount(() => {
 }
 
 :deep(.van-overlay) {
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: hsla(24, 26%, 15%, 0.6);
 }
 </style>

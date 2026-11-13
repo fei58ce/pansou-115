@@ -103,7 +103,12 @@
     <el-table-column label="来源" prop="channel">
       <template #default="{ row }">
         <div class="group-header">
-          <span v-if="row.id === SUMMARY_115_ID" class="channel-logo channel-logo--115">115</span>
+          <img
+            v-if="row.id === SUMMARY_115_ID"
+            :src="iconCloudBox"
+            alt=""
+            class="channel-logo channel-logo--115"
+          />
           <el-image
             v-else
             :src="getProxyImageUrl(row.channelInfo.channelLogo as string)"
@@ -125,6 +130,7 @@ import { useResourceStore } from "@/stores/resource";
 import type { ResourceItem, TagColor } from "@/types";
 import { getProxyImageUrl } from "@/utils/image";
 import { copyMagnet } from "@/utils/magnet";
+import iconCloudBox from "@/assets/moe/icon-cloud-box.webp";
 import {
   LINK_STATUS_LABEL,
   LINK_STATUS_TONE,
@@ -200,14 +206,11 @@ const searchMovieforTag = (tag: string) => {
   overflow: hidden;
 }
 .channel-logo--115 {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex: none;
-  background: var(--primary-500);
-  color: #fff;
-  font-size: 9px;
-  font-weight: var(--weight-bold);
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+  object-fit: contain;
 }
 .item-source {
   margin-top: 4px;
@@ -221,7 +224,7 @@ const searchMovieforTag = (tag: string) => {
 }
 
 .item-count {
-  color: #909399;
+  color: var(--text-tertiary);
   font-size: 0.9em;
 }
 .tags-list {

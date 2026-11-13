@@ -1,7 +1,9 @@
 ﻿<template>
   <div class="login">
     <!-- 背景区域 -->
-    <div class="login__background" aria-hidden="true" />
+    <div class="login__background" aria-hidden="true">
+      <img :src="sceneLoginLeft" alt="" class="login__scene" />
+    </div>
 
     <!-- 主要内容区 -->
     <main class="login__content">
@@ -28,7 +30,7 @@
                 @keyup.enter="focusLoginPassword"
               >
                 <template #left-icon>
-                  <van-icon name="user-o" />
+                  <van-icon :name="iconUser" />
                 </template>
               </van-field>
 
@@ -45,7 +47,7 @@
                 @keyup.enter="handleLogin"
               >
                 <template #left-icon>
-                  <van-icon name="lock" />
+                  <van-icon :name="iconLock" />
                 </template>
               </van-field>
 
@@ -86,7 +88,7 @@
                 :rules="usernameRules"
               >
                 <template #left-icon>
-                  <van-icon name="user-o" />
+                  <van-icon :name="iconUser" />
                 </template>
               </van-field>
 
@@ -99,7 +101,7 @@
                 :rules="passwordRules"
               >
                 <template #left-icon>
-                  <van-icon name="lock" />
+                  <van-icon :name="iconLock" />
                 </template>
               </van-field>
 
@@ -112,7 +114,7 @@
                 :rules="confirmPasswordRules"
               >
                 <template #left-icon>
-                  <van-icon name="lock" />
+                  <van-icon :name="iconLock" />
                 </template>
               </van-field>
 
@@ -124,7 +126,7 @@
                 :rules="registerCodeRules"
               >
                 <template #left-icon>
-                  <van-icon name="certificate" />
+                  <van-icon :name="iconKey" />
                 </template>
               </van-field>
             </van-cell-group>
@@ -155,7 +157,11 @@ import { useRouter } from "vue-router";
 import { showNotify } from "vant";
 import type { FieldInstance, FieldRule } from "vant";
 import { userApi } from "@/api/user";
-import logo from "@/assets/images/logo.png";
+import logo from "@/assets/moe/mascot-logo.webp";
+import sceneLoginLeft from "@/assets/moe/scene-login-left.webp";
+import iconUser from "@/assets/moe/icon-user.webp";
+import iconLock from "@/assets/moe/icon-lock.webp";
+import iconKey from "@/assets/moe/icon-key.webp";
 import { STORAGE_KEYS } from "@/constants/storage";
 
 // 类型定义
@@ -304,9 +310,16 @@ const registerCodeRules: FieldRule[] = [{ required: true, message: "请填写注
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 18% 22%, hsla(0, 0%, 100%, 0.22), transparent 38%),
-      radial-gradient(circle at 82% 8%, hsla(262, 90%, 80%, 0.35), transparent 42%),
-      linear-gradient(160deg, var(--primary-600), var(--primary-400));
+      radial-gradient(circle at 18% 18%, var(--pink-100), transparent 45%),
+      radial-gradient(circle at 85% 12%, var(--primary-100), transparent 40%), var(--surface);
+
+    .login__scene {
+      position: absolute;
+      top: 3%;
+      left: 50%;
+      height: 30%;
+      transform: translateX(-50%);
+    }
   }
 
   // 主内容区
@@ -319,7 +332,8 @@ const registerCodeRules: FieldRule[] = [{ required: true, message: "请填写注
     padding: 40px 20px;
     background-color: var(--theme-other_background);
     border-radius: 24px 24px 0 0;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+    border-top: 1.5px solid var(--line);
+    box-shadow: 0 -4px 16px hsla(25, 30%, 20%, 0.08);
     backdrop-filter: blur(8px);
   }
 
@@ -353,8 +367,8 @@ const registerCodeRules: FieldRule[] = [{ required: true, message: "请填写注
 
   &__form-group {
     margin: 0 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border-radius: 12px;
+    border: 1.5px solid var(--line-soft);
+    border-radius: var(--radius-sketch);
     overflow: hidden;
   }
 
@@ -365,13 +379,14 @@ const registerCodeRules: FieldRule[] = [{ required: true, message: "请填写注
   &__button {
     height: 48px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
+    border-radius: var(--radius-sketch-pill);
   }
 
   // 记住密码区域
   &__remember {
     padding: 12px 16px;
-    border-top: 0.5px solid #f5f5f5;
+    border-top: 1px dashed var(--border-strong);
   }
 
   &__tabs {
@@ -434,13 +449,13 @@ const registerCodeRules: FieldRule[] = [{ required: true, message: "请填写注
   display: flex;
   align-items: center;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 
   .van-checkbox__icon {
     font-size: 16px;
 
     .van-icon {
-      border: 1px solid #dcdee0;
+      border: 1px solid var(--line-soft);
       border-radius: 2px;
       transition: all 0.2s;
     }

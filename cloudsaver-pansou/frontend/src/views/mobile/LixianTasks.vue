@@ -263,9 +263,10 @@ onMounted(loadTasks);
 .strm-card {
   margin-bottom: var(--spacing-base);
   padding: 12px;
-  border-radius: 12px;
-  background: var(--theme-card-background, #fff);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-sketch);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
 }
 
 .strm-header {
@@ -286,7 +287,7 @@ onMounted(loadTasks);
 }
 
 .strm-error {
-  color: #ee0a24;
+  color: var(--red-700);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -299,7 +300,7 @@ onMounted(loadTasks);
 
 .strm-file {
   padding: 6px 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px dashed var(--border-strong);
 }
 
 .strm-file-name {
@@ -318,7 +319,7 @@ onMounted(loadTasks);
 }
 
 .record-error {
-  color: #ee0a24;
+  color: var(--red-700);
   word-break: break-all;
 }
 
@@ -328,7 +329,7 @@ onMounted(loadTasks);
 
 .record-strm-path {
   overflow: hidden;
-  color: #67c23a;
+  color: var(--green-700);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

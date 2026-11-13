@@ -77,8 +77,8 @@ onMounted(() => {
     align-items: center;
     height: 64px;
     padding: 0 var(--space-5);
-    background: var(--surface-raised);
-    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-strong);
   }
 
   &__content {

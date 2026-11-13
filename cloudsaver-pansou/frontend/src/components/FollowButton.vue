@@ -38,8 +38,8 @@ const open = () =>
   padding: 0 10px;
   color: var(--green-700);
   background: var(--green-100);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--radius-sketch-pill);
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
@@ -50,7 +50,7 @@ const open = () =>
 }
 
 .follow-button:hover {
-  border-color: hsl(148, 50%, 80%);
+  border-color: var(--line);
 }
 
 .follow-button:focus-visible {
@@ -59,7 +59,7 @@ const open = () =>
 }
 
 .follow-button--compact {
-  height: 26px;
+  height: 28px;
   padding: 0 8px;
   font-size: 12px;
 }

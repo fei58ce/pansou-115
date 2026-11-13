@@ -44,14 +44,14 @@
             hide-on-click-modal
           />
           <div v-if="item.rating > 0" class="tmdb-rating">
-            <el-icon><StarFilled /></el-icon>
+            <img :src="iconStar" alt="" class="tmdb-rating__icon" />
             {{ item.rating.toFixed(1) }}
           </div>
           <div class="tmdb-type">
             {{ item.mediaType === "movie" ? "电影" : "剧集" }}
           </div>
           <div class="tmdb-poster-hover" @click.stop="searchMovie(item.title)">
-            <el-icon class="search_icon" size="28px"><Search /></el-icon>
+            <img :src="iconSearch" alt="" class="search_icon" />
             <span>搜索资源</span>
           </div>
         </div>
@@ -71,6 +71,8 @@
       </div>
       <el-empty
         v-if="!tmdbStore.loading && tmdbStore.list.length === 0"
+        :image="sceneEmpty"
+        :image-size="300"
         description="暂无数据，请确认后端已配置 TMDB_API_KEY"
       />
     </div>
@@ -81,7 +83,9 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useTmdbStore } from "@/stores/tmdb";
-import { StarFilled, Search } from "@element-plus/icons-vue";
+import iconSearch from "@/assets/moe/icon-search.webp";
+import iconStar from "@/assets/moe/icon-star.webp";
+import sceneEmpty from "@/assets/moe/scene-empty.webp";
 import type { TmdbItem } from "@/types/tmdb";
 
 const router = useRouter();
@@ -153,10 +157,10 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--grey-300);
     border-radius: 4px;
     &:hover {
-      background: rgba(0, 0, 0, 0.3);
+      background: var(--grey-400);
     }
   }
 
@@ -168,7 +172,8 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
 .tmdb-card {
   width: 200px;
   background: var(--theme-card-bg);
-  border-radius: var(--theme-radius);
+  border: var(--line-width) solid var(--line-soft);
+  border-radius: var(--radius-sketch);
   box-shadow: var(--theme-shadow);
   box-sizing: border-box;
   padding: 12px;
@@ -186,7 +191,7 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
   height: 280px;
   position: relative;
   overflow: hidden;
-  border-radius: var(--theme-radius);
+  border-radius: var(--radius-sketch-sm);
   box-sizing: border-box;
 }
 
@@ -201,20 +206,26 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
   transition: opacity 0.3s ease;
   position: absolute;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.55);
+  background-color: hsla(40, 60%, 99%, 0.82);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
+  font-weight: var(--weight-medium);
   backdrop-filter: blur(2px);
 
   &:hover {
     opacity: 1;
   }
+}
+
+.search_icon {
+  width: 30px;
+  height: 30px;
 }
 
 .tmdb-poster:hover .tmdb-poster-hover {
@@ -225,25 +236,32 @@ const formatDate = (date: string) => (date ? date.slice(0, 4) : "");
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fbbf24;
-  padding: 2px 8px;
-  border-radius: var(--theme-radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  padding: 1px 8px;
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-bold);
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
-  backdrop-filter: blur(4px);
+}
+
+.tmdb-rating__icon {
+  width: 14px;
+  height: 14px;
 }
 
 .tmdb-type {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: var(--theme-primary);
-  color: white;
-  padding: 2px 8px;
-  border-radius: var(--theme-radius-sm);
+  background: var(--pink-100);
+  color: var(--text-primary);
+  padding: 1px 8px;
+  border: var(--line-width) solid var(--line);
+  border-radius: var(--radius-full);
   font-size: 12px;
 }
 
