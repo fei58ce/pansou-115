@@ -67,6 +67,27 @@ const POSTER_CACHE_LIMIT = 2000;
 const POSTER_HIT_TTL = 24 * 60 * 60 * 1000;
 // 没查到海报的标题过一阵再查，TMDB/豆瓣可能只是当时没连上
 const POSTER_MISS_TTL = 30 * 60 * 1000;
+// 资源名里跟在片名后面的发布信息：年份、季集、清晰度、大小、编码音轨、语言字幕、版本。英文标签要求前后不是字母，免得切到英文片名中间
+const RELEASE_INFO = new RegExp(
+  [
+    "(?<!\\d)(?:19|20)\\d{2}(?!\\d)",
+    "第[\\d一二三四五六七八九十百千零两]+[季部集期话]",
+    "(?:全|共)\\d+[集话期]|(?<!\\d)\\d+[集话期]全?|全集|合集|系列|已?完结|更新至?|更至",
+    "(?<![a-z])(?:S\\d{1,2}(?:E\\d{1,4})?|EP?\\d{1,4}|V\\d+版?)(?![a-z])",
+    "(?<![a-z\\d])(?:\\d{3,4}[PI]|[248]K|\\d+(?:FPS|帧))(?![a-z])",
+    "(?<![\\d.])\\d+(?:\\.\\d+)?\\s?(?:[GMT]B|G)(?![a-z])",
+    "(?<![a-z])(?:WEB-?DL|WEB-?RIP|BDRIP|HDRIP|DVDRIP|BLU-?RAY|REMUX|HDTV|ULTRA\\s?HD|UHD|HD|BD|DVD|H\\s?26[45]|X\\s?26[45]|HEVC|AVC|AV1|\\d+BIT|HDR10\\+?|HDR|DV|DOVI|DOLBY|ATMOS|TRUEHD|DTS|DDP?\\d(?:\\.\\d)?|AAC|FLAC|AC3|NF|AMZN|DSNP|IMAX)(?![a-z])",
+    "国语|粤语|国粤|国英|国沪|英语|日语|韩语|双语|中字|中英|双字|简中|繁中|简繁|内封|内嵌|外挂|字幕|杜比|全景声|高码|普码|高清|超清|蓝光|原盘|无水印|去广告|[各双多全]?版本",
+    "(?:纯净|导演剪辑|剪辑|加长|国际|未删减|无删减|完整|修复|重制|典藏|珍藏|特别|院线|抢先)版",
+  ].join("|"),
+  "gi"
+);
+// 资源名开头常见的分类、画质标签，不是片名
+const LEADING_TAG =
+  /^(?:(?:国产|国内|华语|欧美|日韩|日本|韩国|美国|英国|泰国|港台|香港|台湾|大陆|内地|[国美韩日英泰港台])?(?:电视剧|连续剧|剧集|剧|动画电影|电影|动画|动漫|番剧|漫|综艺|纪录片|短剧)|[248]K|\d{3,4}[PI]|高清|超清|蓝光|杜比视界|HDR|合集)$/i;
+// 点号夹在两个数字中间时不算分隔，保住 60.25GB、5.1 这类数值
+const TITLE_SEPARATOR =
+  /[[\]【】()（）{}「」『』《》〈〉<>|｜/\\_+&＆➕,，;；:：~～]|(?<!\d)\.|\.(?!\d)/g;
 // 线上 115 探活偶尔要十几秒：搜索最多等 30 秒，没探完的在后台继续并写进缓存，下次搜到同一链接直接用
 const LINK_CHECK_WAIT_MS = 30000;
 const LINK_CHECK_TIMEOUT = 60000;
@@ -388,19 +409,25 @@ export class PansouSearcher {
     return task;
   }
 
-  /** 去掉季数、清晰度、字幕和资源包装信息，保留影视主标题。 */
+  /** 把资源名洗成影视片名用来查海报：去掉分类前缀和括号，从第一个发布信息起截掉，有中文名时只取中文名。 */
   private extractMediaTitle(title: string): string {
-    return title
-      .replace(/^名称\s*[:：]\s*/i, "")
-      .replace(/[(（【][^)）】]*[)）】]/gu, " ")
-      .replace(
-        /(第[一二三四五六七八九十百千0-9]+季|S\d{1,2}E\d{1,3}|全\d+集|更新至\d+集|\d{4}|4k|8k|2160p|1080p|720p|hdr|dv|dolby|vision|nf|web-?dl|blu-?ray|remux|内封|外挂|简中|繁中|中英|双语|杜比|全景声|atmos)/gi,
-        " "
-      )
-      .replace(/[【】()（）{}]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 80);
+    const raw = title.replace(/^名称\s*[:：]\s*/, "").trim();
+    // extractTitle 给没有说明的链接编的名字，拿去查只会配错图
+    if (/^网盘分享(?:\s|$)/.test(raw)) return "";
+    const words = raw
+      .replace(/^[^\p{L}\p{N}]+/u, "")
+      .replace(TITLE_SEPARATOR, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+    while (words.length > 1 && LEADING_TAG.test(words[0])) words.shift();
+    const text = words.join(" ");
+    // 开头就是年份的算片名（如《1917》），从后面的发布信息起截
+    const cut = [...text.matchAll(RELEASE_INFO)].find((match) => (match.index ?? 0) > 0)?.index;
+    const name = text.slice(0, cut).replace(/^[\s\-·.]+|[\s\-·.]+$/g, "");
+    const chinese = name
+      .split(" ")
+      .find((word) => /\p{Script=Han}/u.test(word) && [...word].length >= 2);
+    return (chinese || name).slice(0, 40);
   }
 
   private buildTitleImageMap(results: PansouResultImage[]): Map<string, string> {

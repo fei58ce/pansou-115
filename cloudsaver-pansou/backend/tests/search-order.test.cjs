@@ -127,3 +127,48 @@ test('探活超过 30 秒先返回结果，后台探完写进缓存，再搜直�
   assert.deepEqual((await searcher.search('繁花', '115')).map((item) => item.cloudLinks[0]), [urls[0]]);
   assert.equal(posts, 1);
 });
+
+test('补海报前把资源名洗成片名：去掉分类前缀、括号和发布信息，有中文名只取中文名', () => {
+  const searcher = new PansouSearcher(noPoster, noPoster);
+  const cases = [
+    ['庆余年.全46集.4K.国语中字.60.25GB【国产剧】', '庆余年'],
+    ['庆余年第一季][2019][4K][全46集][60.2GB][WEB-DL][H.265][国语][57.69GB]', '庆余年'],
+    ['📺 电视剧｜庆余年 (2019) S01-S02 4K 普码', '庆余年'],
+    ['流浪地球.2019.BD1080P.国英双语.中英双字【17.38GB】【纯净版】【国内电影】', '流浪地球'],
+    ['流浪地球.V2版.2019.BD1080P.国语中英字【28.49GB】【纯净版】【国内电影】', '流浪地球'],
+    ['🎬 电影｜流浪地球2 (2023) 2160P.Ultra HD BluRay Remux.DoVi', '流浪地球2'],
+    ['流浪地球2：再次冒险 (2024) WEB-DL 2160p 2.11G', '流浪地球2'],
+    ['繁花(2023)【30集全】【4K.高码率】【杜比视界】【国沪双语】【胡歌/马伊琍】', '繁花'],
+    ['【庆余年】全46集', '庆余年'],
+    ['【4K】【国产剧】庆余年 更新至36集', '庆余年'],
+    ['庆余年 Joy of Life S01', '庆余年'],
+    ['名称：繁花 4K', '繁花'],
+    ['The.Wandering.Earth.II.2023.2160p.WEB-DL.DDP5.1.Atmos.H.265', 'The Wandering Earth II'],
+    ['Inferno.2016.1080p.BluRay', 'Inferno'],
+    ['1917.2019.2160p.BluRay', '1917'],
+    ['🎞️ 动画电影｜哪吒之魔童降世 (2019) [美版4K原盘REMUX 双格式', '哪吒之魔童降世'],
+    ['名称: 哪吒之魔童降世➕哪吒之魔童闹海 美版4K原盘REMUX 杜比视界', '哪吒之魔童降世'],
+    ['名称: 哪吒2各版本合集', '哪吒2'],
+    ['哪吒之魔童降世.字幕修复.1080P&2160P 国语中英双字【29.51GB】【纯净版】', '哪吒之魔童降世'],
+    ['🎬 电影：西部世界 (1973)', '西部世界'],
+    ['日本动漫 葬送的芙莉莲 全28集', '葬送的芙莉莲'],
+    ['沙丘 (2021)原盘', '沙丘'],
+    ['网盘分享 abc123', ''],
+  ];
+  assert.deepEqual(cases.map(([raw]) => [raw, searcher.extractMediaTitle(raw)]), cases);
+});
+
+test('没图的 115 条目拿洗过的片名查一次海报，没有说明的分享链接不去查', async () => {
+  const asked = [];
+  const tmdb = { searchPoster: async (title) => { asked.push(title); return `https://image.tmdb.org/t/p/w500/${title}.jpg`; } };
+  const searcher = new PansouSearcher(tmdb, noPoster);
+  const notes = ['庆余年.全46集.4K.国语中字.60.25GB【国产剧】', '📺 电视剧｜庆余年 (2019) S01-S02 4K 普码', ''];
+  searcher.api = {
+    get: async () => ({ data: { data: { merged_by_type: { '115': notes.map((note, i) => ({ url: `https://115cdn.com/s/p${i}`, note })) } } } }),
+    post: async (_path, body) => checkReply(body, () => 'ok'),
+  };
+  const items = await searcher.search('庆余年', '115');
+  assert.deepEqual(asked, ['庆余年']);
+  const poster = 'https://image.tmdb.org/t/p/w500/庆余年.jpg';
+  assert.deepEqual(items.map((item) => [item.cloudLinks[0].split('/').pop(), item.image]).sort(), [['p0', poster], ['p1', poster], ['p2', '']]);
+});
