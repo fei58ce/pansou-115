@@ -80,4 +80,12 @@
 - 实际操作：执行 `npm run build:frontend`、`npm --prefix frontend test`、`npm run lint`、`npm run format:check`；使用 Playwright 本地 Vite 预览在 1440×960、390×844 下截图并检查滚动宽度、移动按钮语义、reduced-motion。
 - 涉及文件：`.tmp-ui-preview/validate-ui.py`、`.tmp-ui-preview/refined-pc-login.png`、`.tmp-ui-preview/refined-mobile-login.png`、`.tmp-ui-preview/refined-mobile-home.png`、`.tmp-ui-preview/refined-mobile-reduced-motion.png`。
 - 验证结果：构建通过；前端 6 项测试通过；lint 0 错误、18 条既有 warning；浏览器验证通过且桌面/移动端无横向溢出。`format:check` 仍报告 4 个历史文件及本次改动前的 `Tmdb.vue`，本次改动文件已单独通过 Prettier。
-- 遗留问题及下一步：提交精修代码；生产部署未执行，待用户回来后按现有发布流程决定是否上线。
+- 遗留问题及下一步：提交精修代码；按项目既有发布流程执行线上部署并验收。
+
+### [2026-11-15 02:00] 4.1｜提交、推送与线上部署
+
+- 目标：按项目既有发布约定完成可回退发布，并确认公开入口加载新 UI。
+- 实际操作：提交 `3728620`（代码精修）与 `ee8e470`（交接记录），通过本地 Clash `127.0.0.1:7897` 推送到 `origin/main`；经 SSH HTTP CONNECT 代理连接 `ubuntu@138.2.98.41`，备份线上五个前端文件和旧镜像，上传并替换对应源码，执行 `sudo docker compose build cloudsaver` 与 `up -d --no-deps cloudsaver`。
+- 涉及文件：线上 `/opt/pansou115/cloudsaver-pansou/frontend/src/` 五个前端文件；回滚镜像 `pansou115-cloudsaver:rollback-pre-moeui-refine-20261115-0158`；源码备份 `/opt/pansou115/deploy-backups/moeui-refine-20261115-0158/`。
+- 验证结果：线上源码五个文件 SHA-256 与本地一致；容器 `cloudsaver` 正常运行；本机与公开 `https://sou.aiapi.cfd/login` 均返回 200 并通过桌面/移动截图复核；生产 `/api/health` 需要鉴权（401），符合现有接口保护规则。
+- 遗留问题及下一步：`format:check` 仍有 4 个历史文件和既有 `Tmdb.vue` 提示；不影响本次上线，后续可单独安排格式清理。
