@@ -12,13 +12,9 @@
           @search="handleSearch"
         />
 
-        <img
-          :src="mascotLogo"
-          alt="退出登录"
-          role="button"
-          class="header__avatar"
-          @click="handleLogout"
-        />
+        <button type="button" class="header__avatar" aria-label="退出登录" @click="handleLogout">
+          <img :src="mascotLogo" alt="" />
+        </button>
       </div>
     </header>
 
@@ -162,6 +158,9 @@ const handleLogout = () => {
     }
 
     .header__avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       flex: none;
       box-sizing: border-box;
       width: 36px;
@@ -171,10 +170,21 @@ const handleLogout = () => {
       border: 1.5px solid var(--line);
       border-radius: 50%;
       background: var(--pink-50);
-      object-fit: contain;
+      cursor: pointer;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
 
       &:active {
         opacity: 0.7;
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
       }
     }
   }

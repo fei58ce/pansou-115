@@ -57,3 +57,27 @@
 - 涉及文件：`docs/superpowers/specs/2026-11-15-moe-ui-gentle-line-refinement-design.md`。
 - 验证结果：规格覆盖令牌、移动端语义、reduced-motion、构建/预览验收与回退方式；与 `moe-ui-skill` 的“沿用架构、保留真实交互、对照调整”要求一致。
 - 遗留问题及下一步：规格已固定，开始实现。
+
+### [2026-11-15 01:48] 3.2｜统一令牌与移动端交互语义
+
+- 目标：让温柔线描的主要操作在移动端具备原生按钮语义和可见焦点，同时避免颜色散落在组件里。
+- 实际操作：新增 `--primary-foreground` 令牌；搜索按钮改用令牌；移动端首页退出登录头像改为带 `aria-label` 的 `button`；移动端资源页的最近搜索、清空、刷新操作改为原生按钮并补焦点样式。
+- 涉及文件：`cloudsaver-pansou/frontend/src/styles/tokens.scss`、`frontend/src/components/SearchBar.vue`、`frontend/src/views/mobile/Home.vue`、`frontend/src/views/mobile/ResourceList.vue`。
+- 验证结果：Vue 类型检查和 Vite 构建通过；按钮仍使用原有事件处理，未改变接口或导航。
+- 遗留问题及下一步：继续验证 reduced-motion、桌面/移动视口与前端测试。
+
+### [2026-11-15 01:49] 3.3｜尊重 reduced-motion
+
+- 目标：用户关闭动效时，路由淡入、骨架 shimmer 和组件过渡应快速静止。
+- 实际操作：在 `App.vue` 增加 `prefers-reduced-motion: reduce` 全局覆盖，保留内容显示但将动画/过渡压缩到即时反馈。
+- 涉及文件：`cloudsaver-pansou/frontend/src/App.vue`。
+- 验证结果：浏览器上下文启用 `reduced_motion="reduce"` 时，动态样式计算为 `1e-05s`；未启用时保持现有动画行为。
+- 遗留问题及下一步：执行完整前端自动化检查并提交代码。
+
+### [2026-11-15 01:51] 4｜验证与留档
+
+- 目标：确认精修不会破坏构建、业务测试或主要视口布局。
+- 实际操作：执行 `npm run build:frontend`、`npm --prefix frontend test`、`npm run lint`、`npm run format:check`；使用 Playwright 本地 Vite 预览在 1440×960、390×844 下截图并检查滚动宽度、移动按钮语义、reduced-motion。
+- 涉及文件：`.tmp-ui-preview/validate-ui.py`、`.tmp-ui-preview/refined-pc-login.png`、`.tmp-ui-preview/refined-mobile-login.png`、`.tmp-ui-preview/refined-mobile-home.png`、`.tmp-ui-preview/refined-mobile-reduced-motion.png`。
+- 验证结果：构建通过；前端 6 项测试通过；lint 0 错误、18 条既有 warning；浏览器验证通过且桌面/移动端无横向溢出。`format:check` 仍报告 4 个历史文件及本次改动前的 `Tmdb.vue`，本次改动文件已单独通过 Prettier。
+- 遗留问题及下一步：提交精修代码；生产部署未执行，待用户回来后按现有发布流程决定是否上线。

@@ -159,7 +159,7 @@ watch(
         height: 42px;
         margin: 0;
         padding: 0 var(--space-6) 0 var(--space-5);
-        color: #fff;
+        color: var(--primary-foreground);
         font-weight: var(--weight-bold);
         border: none;
         border-radius: 0;

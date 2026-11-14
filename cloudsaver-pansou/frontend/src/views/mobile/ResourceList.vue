@@ -34,20 +34,25 @@
       <div v-if="resourceStore.recentKeywords.length" class="empty__recent">
         <div class="recent__head">
           <span>最近搜索</span>
-          <span class="recent__clear" @click="resourceStore.clearRecentKeywords()">清空</span>
+          <button type="button" class="recent__clear" @click="resourceStore.clearRecentKeywords()">
+            清空
+          </button>
         </div>
         <div class="recent__list">
-          <span
+          <button
             v-for="word in resourceStore.recentKeywords"
             :key="word"
+            type="button"
             class="chip"
             @click="resourceStore.searchResources(word)"
           >
             {{ word }}
-          </span>
+          </button>
         </div>
       </div>
-      <span class="empty__refresh" @click="refreshResources">刷新频道最新资源</span>
+      <button type="button" class="empty__refresh" @click="refreshResources">
+        刷新频道最新资源
+      </button>
     </div>
 
     <template v-else>
@@ -72,13 +77,14 @@
           <span v-if="stats.count115" class="summary__meta summary__meta--115">
             115 有 {{ stats.count115 }} 条
           </span>
-          <img
-            :src="iconRefresh"
-            alt="刷新"
-            role="button"
+          <button
+            type="button"
             class="summary__refresh"
+            aria-label="刷新频道最新资源"
             @click="refreshResources"
-          />
+          >
+            <img :src="iconRefresh" alt="" />
+          </button>
         </template>
       </div>
 
@@ -547,6 +553,21 @@ onBeforeUnmount(() => {
       width: 22px;
       height: 22px;
       padding: 4px;
+      border: 0;
+      border-radius: var(--radius-full);
+      background: transparent;
+      cursor: pointer;
+
+      img {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+      }
     }
   }
 
@@ -710,9 +731,20 @@ onBeforeUnmount(() => {
     }
 
     .recent__clear {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-family: inherit;
       font-size: 12px;
       font-weight: 400;
       color: var(--text-tertiary);
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+        border-radius: var(--radius-sm);
+      }
     }
 
     .recent__list {
@@ -722,18 +754,36 @@ onBeforeUnmount(() => {
     }
 
     .chip {
+      font-family: inherit;
       padding: 4px 12px;
       border: 1.5px solid var(--line);
       border-radius: var(--radius-sketch-pill);
       background: var(--surface-raised);
       color: var(--text-primary);
       font-size: 13px;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+      }
     }
 
     .empty__refresh {
+      padding: 4px 8px;
+      border: 0;
+      border-radius: var(--radius-sketch-pill);
+      background: transparent;
+      font-family: inherit;
       margin-top: 20px;
       font-size: 13px;
       color: var(--primary-600);
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+      }
     }
   }
 }
