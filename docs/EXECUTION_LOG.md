@@ -97,3 +97,11 @@
 - 涉及文件：`frontend/src/App.vue`、`frontend/src/components/SearchBar.vue`、`frontend/src/components/AsideMenu.vue`、`frontend/src/views/pc/Login.vue`、`frontend/src/views/mobile/Login.vue`、`frontend/src/views/mobile/Home.vue`、`frontend/src/views/ResourceList.vue`、`frontend/src/views/mobile/ResourceList.vue`、对应设计规格。
 - 验证结果：前端构建通过；6 项前端测试通过；lint 0 错误、18 条既有 warning；Playwright 验证桌面/移动端动画名、坐标变化、reduced-motion 关闭和无横向溢出均通过。
 - 遗留问题及下一步：提交并推送后重新构建线上镜像，验收公开登录页动画样式。
+
+### [2026-11-15 09:53] 5.1｜动画上线与线上验收
+
+- 目标：把图片轻动效发布到线上，并确认公开页面实际加载了动画 CSS。
+- 实际操作：提交 `2bfd506`（动效设计规格）与 `c9b9835`（动效实现），推送 `origin/main`；通过 Clash SSH 代理备份线上源码和旧镜像，替换 8 个前端文件，执行 Docker Compose 构建并重启 `cloudsaver`。
+- 涉及文件：线上 `/opt/pansou115/cloudsaver-pansou/frontend/src/` 下 `App.vue`、`AsideMenu.vue`、`SearchBar.vue`、桌面/移动资源页和登录页；回滚镜像 `pansou115-cloudsaver:rollback-pre-moeui-motion-20261115-0951`；源码备份 `/opt/pansou115/deploy-backups/moeui-motion-20261115-0951/`。
+- 验证结果：线上构建成功、容器正常运行；公开 `https://sou.aiapi.cfd/login` 桌面/移动 Playwright 验证通过，计算样式为 `moe-line-float`，等待后 `translate` 值发生变化，移动端无横向溢出。
+- 遗留问题及下一步：无；现有 Sass 弃用提示和 lint 的 18 条历史 warning 不影响本次动效。
