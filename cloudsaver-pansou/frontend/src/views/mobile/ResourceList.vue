@@ -20,7 +20,7 @@
 
     <!-- 空状态 -->
     <div v-else-if="!resourceStore.resources.length" class="resource-list__empty">
-      <img :src="sceneEmpty" alt="" class="empty__art" />
+      <img :src="sceneEmpty" alt="" class="empty__art moe-animate--float" />
       <h2 class="empty__title">
         {{ resourceStore.keyword ? `没有找到「${resourceStore.keyword}」` : "搜索影视资源" }}
       </h2>

@@ -13,7 +13,7 @@
         />
 
         <button type="button" class="header__avatar" aria-label="退出登录" @click="handleLogout">
-          <img :src="mascotLogo" alt="" />
+          <img :src="mascotLogo" alt="" class="moe-animate--breathe" />
         </button>
       </div>
     </header>

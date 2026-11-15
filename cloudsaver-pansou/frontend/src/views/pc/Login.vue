@@ -1,10 +1,10 @@
 <template>
   <div class="login-page">
-    <img :src="sceneLoginLeft" alt="" class="login-scene login-scene--left" />
-    <img :src="sceneLoginRight" alt="" class="login-scene login-scene--right" />
+    <img :src="sceneLoginLeft" alt="" class="login-scene login-scene--left moe-animate--float" />
+    <img :src="sceneLoginRight" alt="" class="login-scene login-scene--right moe-animate--float" />
     <div class="login-card">
       <div class="card-header">
-        <img :src="mascotLogo" alt="Logo" class="logo" />
+        <img :src="mascotLogo" alt="Logo" class="logo moe-animate--breathe" />
         <h1 class="title">{{ PROJECT_NAME }}</h1>
         <p class="subtitle">登录后即可搜索资源、追更和转存</p>
       </div>

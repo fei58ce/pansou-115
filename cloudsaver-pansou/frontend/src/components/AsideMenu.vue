@@ -2,7 +2,7 @@
   <div class="pc-aside">
     <!-- Logo 区域 -->
     <div class="pc-aside__logo">
-      <img :src="mascotLogo" alt="" class="logo__image" />
+      <img :src="mascotLogo" alt="" class="logo__image moe-animate--breathe" />
       <span class="logo__title">{{ PROJECT_NAME }}</span>
     </div>
 
@@ -43,7 +43,7 @@
       </template>
     </el-menu>
 
-    <img :src="mascotSidebar" alt="" class="pc-aside__mascot" />
+    <img :src="mascotSidebar" alt="" class="pc-aside__mascot moe-animate--float" />
 
     <!-- GitHub 链接 -->
     <div class="pc-aside__footer">

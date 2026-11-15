@@ -2,14 +2,20 @@
   <div class="login">
     <!-- 背景区域 -->
     <div class="login__background" aria-hidden="true">
-      <img :src="sceneLoginLeft" alt="" class="login__scene" />
+      <img :src="sceneLoginLeft" alt="" class="login__scene moe-animate--float" />
     </div>
 
     <!-- 主要内容区 -->
     <main class="login__content">
       <!-- 头部 Logo -->
       <header class="login__header">
-        <img :src="logo" alt="自用影视搜索库 Logo" class="login__logo" width="60" height="60" />
+        <img
+          :src="logo"
+          alt="自用影视搜索库 Logo"
+          class="login__logo moe-animate--breathe"
+          width="60"
+          height="60"
+        />
         <h1 class="login__title">自用影视搜索库</h1>
       </header>
 

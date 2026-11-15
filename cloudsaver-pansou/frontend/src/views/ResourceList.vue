@@ -102,7 +102,7 @@
 
       <!-- 空状态 -->
       <div v-else class="pc-resources__empty">
-        <img :src="sceneEmpty" alt="" class="empty__art" />
+        <img :src="sceneEmpty" alt="" class="empty__art moe-animate--float" />
         <h2 class="empty__title">
           {{
             resourceStore.keyword ? `没有找到「${resourceStore.keyword}」的资源` : "搜索影视资源"

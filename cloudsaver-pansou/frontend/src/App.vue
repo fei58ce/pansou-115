@@ -40,11 +40,53 @@ body {
   *,
   *::before,
   *::after {
+    animation-name: none !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* 温柔线描插画的轻动效：只移动素材本身，不改变布局；系统关闭动效时由上面的规则完全停用。 */
+@keyframes moe-line-float {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -0.4deg;
+  }
+
+  50% {
+    translate: 0 -6px;
+    rotate: 0.4deg;
+  }
+}
+
+@keyframes moe-line-breathe {
+  0%,
+  100% {
+    scale: 0.98;
+  }
+
+  50% {
+    scale: 1.02;
+  }
+}
+
+.moe-animate--float,
+.moe-animate--breathe,
+.el-empty__image img {
+  transform-origin: center bottom;
+  will-change: translate, rotate, scale;
+}
+
+.moe-animate--float,
+.el-empty__image img {
+  animation: moe-line-float 6s ease-in-out infinite;
+}
+
+.moe-animate--breathe {
+  animation: moe-line-breathe 5s ease-in-out infinite;
 }
 
 input {

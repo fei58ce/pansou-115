@@ -89,3 +89,11 @@
 - 涉及文件：线上 `/opt/pansou115/cloudsaver-pansou/frontend/src/` 五个前端文件；回滚镜像 `pansou115-cloudsaver:rollback-pre-moeui-refine-20261115-0158`；源码备份 `/opt/pansou115/deploy-backups/moeui-refine-20261115-0158/`。
 - 验证结果：线上源码五个文件 SHA-256 与本地一致；容器 `cloudsaver` 正常运行；本机与公开 `https://sou.aiapi.cfd/login` 均返回 200 并通过桌面/移动截图复核；生产 `/api/health` 需要鉴权（401），符合现有接口保护规则。
 - 遗留问题及下一步：`format:check` 仍有 4 个历史文件和既有 `Tmdb.vue` 提示；不影响本次上线，后续可单独安排格式清理。
+
+### [2026-11-15 09:47] 5｜补充图片动画风格
+
+- 目标：回应用户反馈，为温柔线描插画增加轻柔、可关闭的动效表现。
+- 实际操作：新增 `docs/superpowers/specs/2026-11-15-moe-ui-image-motion-design.md`；在 `App.vue` 增加 `moe-line-float` 与 `moe-line-breathe` keyframes；为登录场景、搜索栏探头、侧栏人物、空状态插画、Logo 和移动端头像接入动画 class；reduced-motion 时将动画名设为 `none`。
+- 涉及文件：`frontend/src/App.vue`、`frontend/src/components/SearchBar.vue`、`frontend/src/components/AsideMenu.vue`、`frontend/src/views/pc/Login.vue`、`frontend/src/views/mobile/Login.vue`、`frontend/src/views/mobile/Home.vue`、`frontend/src/views/ResourceList.vue`、`frontend/src/views/mobile/ResourceList.vue`、对应设计规格。
+- 验证结果：前端构建通过；6 项前端测试通过；lint 0 错误、18 条既有 warning；Playwright 验证桌面/移动端动画名、坐标变化、reduced-motion 关闭和无横向溢出均通过。
+- 遗留问题及下一步：提交并推送后重新构建线上镜像，验收公开登录页动画样式。

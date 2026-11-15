@@ -1,6 +1,6 @@
 <template>
   <div class="pc-search">
-    <img :src="mascotPeek" alt="" class="pc-search__mascot" />
+    <img :src="mascotPeek" alt="" class="pc-search__mascot moe-animate--float" />
     <!-- 搜索区域 -->
     <div class="pc-search__input">
       <el-input
