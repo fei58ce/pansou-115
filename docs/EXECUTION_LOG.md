@@ -113,3 +113,11 @@
 - 涉及文件：`cloudsaver-pansou/frontend/src/assets/moe/scene-empty-generated.webp`、`cloudsaver-pansou/frontend/src/assets/moe/mascot-search-generated.webp`、`frontend/src/views/pc/Login.vue`、`frontend/src/views/mobile/Login.vue`、`frontend/src/views/ResourceList.vue`、`frontend/src/views/mobile/ResourceList.vue`、`frontend/src/components/SearchBar.vue`、对应设计规格。
 - 验证结果：本地 `npm run build:frontend` 通过；6 项前端测试通过；lint 0 错误、18 条既有 warning；Playwright/CDP 桌面 1440×960 与移动 390×844 登录页截图均能看到新生成主视觉，移动页无横向溢出。
 - 遗留问题及下一步：需要提交并推送，按线上既有流程备份源码/镜像后重新构建部署，再用公开登录页验收资源加载与动效。
+
+### [2026-11-15 10:24] 6.2｜生图素材发布与线上验收
+
+- 目标：让用户在公开登录入口即可看到本次生图结果，并确认桌面/移动布局没有被宽幅图片破坏。
+- 实际操作：提交 `9f8c97d` 并通过本地 Clash `127.0.0.1:7897` 推送 `origin/main`；经 SSH HTTP CONNECT 代理备份线上源码和旧镜像，保留目录结构上传 7 个前端文件，避免 `Login.vue` / `ResourceList.vue` 同名覆盖；执行 `sudo docker compose build cloudsaver` 与 `up -d --no-deps cloudsaver`。
+- 涉及文件：线上 `/opt/pansou115/cloudsaver-pansou/frontend/src/` 下两个生成 WebP 与 5 个 Vue 文件；回滚镜像 `pansou115-cloudsaver:rollback-pre-moeui-generated-20261115-1020`；源码备份 `/opt/pansou115/deploy-backups/moeui-generated-20261115-1020/`；生成原图目录 `C:\Users\admin\.codex\generated_images\01a1da0b-6bcd-7001-81c3-07699b9467bd\`。
+- 验证结果：本地与服务器 7 个文件 SHA-256 一致；线上镜像 `sha256:bbf09985e7390a47804a5fb5d87571739f1bc40b172cc57c34d755ab9a4018bf`；`cloudsaver` 容器正常运行；公开 `https://sou.aiapi.cfd/login` 桌面 1440×960、移动 390×844 截图均能看到新生成主视觉；`validate-online-motion.py` 通过。
+- 遗留问题及下一步：生图结果为静态 WebP，页面动感由现有 CSS 轻浮动提供；系统开启 reduced-motion 时会停用。其余 Sass 弃用提示和 lint 的 18 条历史 warning 不影响本次发布。
