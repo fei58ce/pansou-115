@@ -1,7 +1,11 @@
 <template>
   <div class="login-page">
     <img :src="sceneLoginLeft" alt="" class="login-scene login-scene--left moe-animate--float" />
-    <img :src="sceneLoginRight" alt="" class="login-scene login-scene--right moe-animate--float" />
+    <img
+      :src="sceneEmptyGenerated"
+      alt=""
+      class="login-scene login-scene--right moe-animate--float"
+    />
     <div class="login-card">
       <div class="card-header">
         <img :src="mascotLogo" alt="Logo" class="logo moe-animate--breathe" />
@@ -97,7 +101,7 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import mascotLogo from "@/assets/moe/mascot-logo.webp";
 import sceneLoginLeft from "@/assets/moe/scene-login-left.webp";
-import sceneLoginRight from "@/assets/moe/scene-login-right.webp";
+import sceneEmptyGenerated from "@/assets/moe/scene-empty-generated.webp";
 import iconUser from "@/assets/moe/icon-user.webp";
 import iconLock from "@/assets/moe/icon-lock.webp";
 import iconKey from "@/assets/moe/icon-key.webp";

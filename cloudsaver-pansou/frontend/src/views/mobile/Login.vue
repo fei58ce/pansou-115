@@ -2,7 +2,7 @@
   <div class="login">
     <!-- 背景区域 -->
     <div class="login__background" aria-hidden="true">
-      <img :src="sceneLoginLeft" alt="" class="login__scene moe-animate--float" />
+      <img :src="sceneEmptyGenerated" alt="" class="login__scene moe-animate--float" />
     </div>
 
     <!-- 主要内容区 -->
@@ -164,7 +164,7 @@ import { showNotify } from "vant";
 import type { FieldInstance, FieldRule } from "vant";
 import { userApi } from "@/api/user";
 import logo from "@/assets/moe/mascot-logo.webp";
-import sceneLoginLeft from "@/assets/moe/scene-login-left.webp";
+import sceneEmptyGenerated from "@/assets/moe/scene-empty-generated.webp";
 import iconUser from "@/assets/moe/icon-user.webp";
 import iconLock from "@/assets/moe/icon-lock.webp";
 import iconKey from "@/assets/moe/icon-key.webp";

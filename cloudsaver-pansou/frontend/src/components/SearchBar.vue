@@ -1,6 +1,6 @@
 <template>
   <div class="pc-search">
-    <img :src="mascotPeek" alt="" class="pc-search__mascot moe-animate--float" />
+    <img :src="mascotSearchGenerated" alt="" class="pc-search__mascot moe-animate--float" />
     <!-- 搜索区域 -->
     <div class="pc-search__input">
       <el-input
@@ -34,7 +34,7 @@ import { ref, computed, watch } from "vue";
 import { useResourceStore } from "@/stores/resource";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import mascotPeek from "@/assets/moe/mascot-peek.webp";
+import mascotSearchGenerated from "@/assets/moe/mascot-search-generated.webp";
 import iconSearch from "@/assets/moe/icon-search.webp";
 import iconPower from "@/assets/moe/icon-power.webp";
 import { STORAGE_KEYS } from "@/constants/storage";

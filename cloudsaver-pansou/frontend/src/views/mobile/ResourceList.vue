@@ -291,7 +291,7 @@ import { add115Lixian } from "@/utils/magnet";
 import { resourceStats, withSummary115 } from "@/utils/resource";
 import decoPopcorn from "@/assets/moe/deco-popcorn.webp";
 import iconRefresh from "@/assets/moe/icon-refresh.webp";
-import sceneEmpty from "@/assets/moe/scene-empty.webp";
+import sceneEmpty from "@/assets/moe/scene-empty-generated.webp";
 
 // 状态管理
 const router = useRouter();

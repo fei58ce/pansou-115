@@ -105,3 +105,11 @@
 - 涉及文件：线上 `/opt/pansou115/cloudsaver-pansou/frontend/src/` 下 `App.vue`、`AsideMenu.vue`、`SearchBar.vue`、桌面/移动资源页和登录页；回滚镜像 `pansou115-cloudsaver:rollback-pre-moeui-motion-20261115-0951`；源码备份 `/opt/pansou115/deploy-backups/moeui-motion-20261115-0951/`。
 - 验证结果：线上构建成功、容器正常运行；公开 `https://sou.aiapi.cfd/login` 桌面/移动 Playwright 验证通过，计算样式为 `moe-line-float`，等待后 `translate` 值发生变化，移动端无横向溢出。
 - 遗留问题及下一步：无；现有 Sass 弃用提示和 lint 的 18 条历史 warning 不影响本次动效。
+
+### [2026-11-15 10:12] 6.1｜生成并接入项目专用图片
+
+- 目标：回应“没有图片”的反馈，用内置生图模型生成真正可见的温柔线描素材，并接入未登录与已登录页面。
+- 实际操作：使用内置 `image_gen` 生成宽幅搜索助手主视觉和透明背景搜索栏吉祥物；将原始 PNG 保留在 `C:\Users\admin\.codex\generated_images\01a1da0b-6bcd-7001-81c3-07699b9467bd\`，压缩为 WebP 后复制到项目；桌面/移动登录页、桌面/移动资源空状态、桌面搜索栏改用新素材；保留既有 CSS 轻浮动和 reduced-motion 关闭逻辑；写入 `docs/superpowers/specs/2026-11-15-moe-ui-generated-art-design.md`。
+- 涉及文件：`cloudsaver-pansou/frontend/src/assets/moe/scene-empty-generated.webp`、`cloudsaver-pansou/frontend/src/assets/moe/mascot-search-generated.webp`、`frontend/src/views/pc/Login.vue`、`frontend/src/views/mobile/Login.vue`、`frontend/src/views/ResourceList.vue`、`frontend/src/views/mobile/ResourceList.vue`、`frontend/src/components/SearchBar.vue`、对应设计规格。
+- 验证结果：本地 `npm run build:frontend` 通过；6 项前端测试通过；lint 0 错误、18 条既有 warning；Playwright/CDP 桌面 1440×960 与移动 390×844 登录页截图均能看到新生成主视觉，移动页无横向溢出。
+- 遗留问题及下一步：需要提交并推送，按线上既有流程备份源码/镜像后重新构建部署，再用公开登录页验收资源加载与动效。

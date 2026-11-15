@@ -281,7 +281,7 @@ import { ArrowUp, Loading } from "@element-plus/icons-vue";
 import decoPopcorn from "@/assets/moe/deco-popcorn.webp";
 import iconRefresh from "@/assets/moe/icon-refresh.webp";
 import iconPicture from "@/assets/moe/icon-picture.webp";
-import sceneEmpty from "@/assets/moe/scene-empty.webp";
+import sceneEmpty from "@/assets/moe/scene-empty-generated.webp";
 import { add115Lixian } from "@/utils/magnet";
 import { cloudTypeLabel, primaryLink, resourceStats, withSummary115 } from "@/utils/resource";
 const router = useRouter();
